@@ -51,27 +51,40 @@ def make_progress_bar(percentage: float, length: int = 10) -> str:
 
 @router.message(Command("update_bot"))
 async def cmd_update_bot(message: Message):
-    status_msg = await message.answer("⏳ <b>Запуск авто-обновления бота с GitHub...</b>\n<i>Выполняется git pull...</i>", parse_mode="HTML")
+    status_msg = await message.answer(
+        "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА ЗАПУЩЕНА</b>\n\n"
+        "⏳ <i>1/2 Связываемся с репозиторием GitHub (git pull origin main)...</i>",
+        parse_mode="HTML"
+    )
     import subprocess
     try:
-        # Выполняем git pull для стягивания обновлений с GitHub
+        # Выполняем git pull
         git_result = subprocess.run(["git", "pull", "origin", "main"], capture_output=True, text=True, cwd=os.getcwd())
-        output_text = git_result.stdout if git_result.stdout else git_result.stderr
+        output_text = git_result.stdout.strip() if git_result.stdout else git_result.stderr.strip()
 
-        # Пересобираем базу если обновился seed_words.py
+        await status_msg.edit_text(
+            "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА</b>\n\n"
+            "✅ <i>1/2 Исходный код с GitHub получен!</i>\n"
+            "⏳ <i>2/2 Синхронизируем базу данных словаря (python3 seed_words.py)...</i>",
+            parse_mode="HTML"
+        )
+
+        # Пересобираем базу слов
         seed_result = subprocess.run(["python3", "seed_words.py"], capture_output=True, text=True, cwd=os.getcwd())
+        seed_text = seed_result.stdout.strip() if seed_result.stdout else "База данных актуальна."
 
         res_text = (
-            f"✅ <b>Обновление с GitHub успешно завершено!</b>\n\n"
-            f"📦 <b>Лог Git Pull:</b>\n"
-            f"<code>{output_text.strip()}</code>\n\n"
-            f"🌱 <b>Лог Базы данных:</b>\n"
-            f"<code>{seed_result.stdout.strip()}</code>\n\n"
-            f"🔄 <i>Все файлы обновились!</i>"
+            f"🎉 <b>ОБНОВЛЕНИЕ БОТА УСПЕШНО ЗАВЕРШЕНО!</b>\n\n"
+            f"📥 <b>Статус Git Pull:</b>\n"
+            f"<code>{output_text}</code>\n\n"
+            f"🔤 <b>Статус Синхронизации БД:</b>\n"
+            f"<code>{seed_text}</code>\n\n"
+            f"✨ <i>Все свежие доработки, новые слова и клипы применены!</i>"
         )
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     except Exception as e:
-        await status_msg.edit_text(f"❌ <b>Ошибка при обновлении с GitHub:</b>\n<code>{e}</code>", parse_mode="HTML")
+        await status_msg.edit_text(f"❌ <b>Произошла ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
 
 
 @router.message(CommandStart())
