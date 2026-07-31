@@ -79,7 +79,13 @@ async def init_db():
         except Exception:
             pass
 
+        try:
+            await db.execute("ALTER TABLE words ADD COLUMN movie_quote TEXT")
+        except Exception:
+            pass
+
         # Миграции полей если таблицы уже созданы
+
         try:
             await db.execute("ALTER TABLE users ADD COLUMN reminder_hour INTEGER DEFAULT 9")
         except Exception:

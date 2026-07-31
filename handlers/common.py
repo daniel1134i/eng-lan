@@ -160,6 +160,95 @@ async def cb_add_custom_word(call: CallbackQuery):
     await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
     await call.answer()
 
+
+# ----------------- РЕЖИМ СПРИНТ (60 SECONDS BLITZ) -----------------
+sprint_scores = {}
+
+async def send_sprint_question(call: CallbackQuery):
+    user_id = call.from_user.id
+    import random
+    from database.db import get_db
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 2") as cursor:
+            rows = await cursor.fetchall()
+
+    if len(rows) < 2:
+        return
+
+    is_correct_pair = random.choice([True, False])
+    target_word = rows[0]['english_word'].capitalize()
+    
+    if is_correct_pair:
+        shown_translation = rows[0]['translation']
+    else:
+        shown_translation = rows[1]['translation']
+
+    score_data = sprint_scores.get(user_id, {"score": 0, "count": 0})
+    score = score_data["score"]
+    count = score_data["count"]
+
+    text = (
+        f"⚡ <b>РЕЖИМ СПРИНТ (60 Секунд)</b>\n\n"
+        f"🏆 Набрано очков: <b>{score}</b> / Ответов: <b>{count}</b>\n\n"
+        f"Слово: <b>{target_word}</b>\n"
+        f"Перевод: <b>{shown_translation}</b>\n\n"
+        f"<i>Правильный ли перевод представлен выше?</i>"
+    )
+    from keyboards.inline import get_sprint_keyboard
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_sprint_keyboard(is_correct_pair))
+
+@router.callback_query(F.data == "mode_sprint")
+async def cb_mode_sprint(call: CallbackQuery):
+    user_id = call.from_user.id
+    sprint_scores[user_id] = {"score": 0, "count": 0}
+    await send_sprint_question(call)
+    await call.answer("⚡ Спринт запущен! Набирай рекорд!")
+
+@router.callback_query(F.data.startswith("sprint_ans_"))
+async def cb_sprint_answer(call: CallbackQuery):
+    user_id = call.from_user.id
+    parts = call.data.split("_")
+    user_choice_true = parts[2] == "true"
+    is_actual_pair_true = parts[3] == "1"
+
+    score_data = sprint_scores.get(user_id, {"score": 0, "count": 0})
+    score_data["count"] += 1
+
+    if user_choice_true == is_actual_pair_true:
+        score_data["score"] += 10
+        await call.answer("✅ ВЕРНО! +10 XP")
+    else:
+        await call.answer("❌ НЕВЕРНО!")
+
+    sprint_scores[user_id] = score_data
+    await send_sprint_question(call)
+
+# ----------------- РЕЖИМ КАДР И ЦИТАТЫ ИЗ СЕРИАЛОВ -----------------
+@router.callback_query(F.data == "mode_movie_quote")
+async def cb_mode_movie_quote(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.db import get_db
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM words WHERE category = 'Цитаты из сериалов' ORDER BY RANDOM() LIMIT 1") as cursor:
+            word = await cursor.fetchone()
+
+    if not word:
+        await call.answer("Раздел цитат пополняется...", show_alert=True)
+        return
+
+    text = (
+        f"🎬 <b>ЦИТАТЫ ИЗ КУЛЬТОВЫХ СЕРИАЛОВ</b>\n\n"
+        f"🔤 Изучаемое слово: <b>{word['english_word'].capitalize()}</b>\n"
+        f"🇷🇺 Перевод: <b>{word['translation']}</b>\n\n"
+        f"💬 <b>Цитата из сериала:</b>\n"
+        f"{word['example_sentence']}"
+    )
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    await call.answer()
+
+
 @router.message(F.text)
 async def handle_user_custom_word_text(message: Message):
     user_id = message.from_user.id

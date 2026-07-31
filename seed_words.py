@@ -2913,17 +2913,28 @@ NEW_VOCABULARY_PACKS = [
     ("flawless", "безупречный, идеальный", "adjective", "Her English pronunciation is flawless.", "Комплименты"),
     ("captivating", "пленительный, завораживающий", "adjective", "She gave a captivating performance.", "Комплименты"),
 
-    # 🤬 Ругательства и Оскорбления (18+ / Экспрессивная лексика)
-    ("damn", "черт, проклятье", "exclamation", "Damn, I forgot my keys again!", "Ругательства"),
-    ("bullshit", "чушь, чепуха", "noun", "Do not listen to him, that is total bullshit.", "Ругательства"),
-    ("bastard", "ублюдок, подлец", "noun", "He turned out to be a real bastard.", "Ругательства"),
-    ("asshole", "мудак, козел", "noun", "Stop acting like an asshole.", "Ругательства"),
-    ("bitch", "стерва, сука", "noun", "Stop complaining like a bitch.", "Ругательства"),
-    ("douchebag", "придурок, кретин", "noun", "That douchebag cut me off in traffic.", "Ругательства"),
-    ("freak", "псих, урод", "noun", "Get away from me, you freak!", "Ругательства"),
-    ("loser", "неудачник, лузер", "noun", "He acts like a total loser.", "Ругательства"),
-    ("jerk", "хам, болван", "noun", "Do not be such a rude jerk.", "Ругательства"),
-    ("moron", "идиот, дебил", "noun", "Only a moron would do something like that.", "Ругательства"),
+    # 🎬 Цитаты из культовых сериалов
+    ("family", "семья, родня", "noun", "🎬 <b>Клан Сопрано:</b> <i>'There is no promotion here. This is a family.'</i> — Tony Soprano", "Цитаты из сериалов"),
+    ("respect", "уважение", "noun", "🎬 <b>Клан Сопрано:</b> <i>'Those who want respect, give respect.'</i> — Tony Soprano", "Цитаты из сериалов"),
+    ("danger", "опасность", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am not in danger, Skyler. I am the danger!'</i> — Walter White", "Цитаты из сериалов"),
+    ("empire", "империя", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am in the empire business.'</i> — Walter White", "Цитаты из сериалов"),
+    ("lawyer", "адвокат, юрист", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Did you know that you have rights? Better Call Saul!'</i> — Saul Goodman", "Цитаты из сериалов"),
+    ("winner", "победитель", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Winners take it all.'</i> — Jimmy McGill", "Цитаты из сериалов"),
+    ("saving people", "спасение людей", "phrase", "🎬 <b>Сверхъестественное:</b> <i>'Saving people, hunting things. The family business.'</i> — Dean Winchester", "Цитаты из сериалов"),
+    ("monsters", "монстры, чудовища", "noun", "🎬 <b>Сверхъестественное:</b> <i>'Driver picks the music, shotgun shuts his mouth.'</i> — Dean Winchester", "Цитаты из сериалов"),
+
+    # 💬 Фразовые глаголы (Phrasal Verbs)
+    ("give up", "сдаваться, бросать", "verb", "Never give up on your dreams.", "Фразовые глаголы"),
+    ("look for", "искать", "verb", "I am looking for my keys.", "Фразовые глаголы"),
+    ("look after", "присматривать, ухаживать", "verb", "She looks after her younger brother.", "Фразовые глаголы"),
+    ("take off", "взлетать, снимать одежду", "verb", "The plane will take off in five minutes.", "Фразовые глаголы"),
+    ("turn on", "включать", "verb", "Please turn on the light.", "Фразовые глаголы"),
+    ("turn off", "выключать", "verb", "Do not forget to turn off the TV.", "Фразовые глаголы"),
+    ("find out", "выяснять, узнавать", "verb", "I need to find out the truth.", "Фразовые глаголы"),
+    ("run out of", "заканчиваться", "verb", "We ran out of milk this morning.", "Фразовые глаголы"),
+    ("figure out", "понять, разобраться", "verb", "I finally figured out how this works.", "Фразовые глаголы"),
+    ("carry on", "продолжать", "verb", "Carry on doing your great work.", "Фразовые глаголы"),
+
 ]
 
 

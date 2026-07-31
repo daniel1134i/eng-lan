@@ -7,6 +7,10 @@ def get_main_menu_keyboard():
             InlineKeyboardButton(text="🧩 Викторина", callback_data="mode_quiz")
         ],
         [
+            InlineKeyboardButton(text="⚡ Спринт 60 сек", callback_data="mode_sprint"),
+            InlineKeyboardButton(text="🎬 Кадр из сериала", callback_data="mode_movie_quote")
+        ],
+        [
             InlineKeyboardButton(text="📚 Темы слов", callback_data="categories_menu"),
             InlineKeyboardButton(text="➕ Добавить слово", callback_data="add_custom_word")
         ],
@@ -19,6 +23,7 @@ def get_main_menu_keyboard():
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_categories_keyboard(categories: list, selected_category: str = "all"):
 
@@ -104,8 +109,22 @@ def get_quiz_keyboard(word_id: int, options: list):
     ])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+def get_sprint_keyboard(is_correct_pair: bool):
+
+    keyboard = [
+        [
+            InlineKeyboardButton(text="✅ ВЕРНО", callback_data=f"sprint_ans_true_{1 if is_correct_pair else 0}"),
+            InlineKeyboardButton(text="❌ НЕВЕРНО", callback_data=f"sprint_ans_false_{1 if is_correct_pair else 0}")
+        ],
+        [
+            InlineKeyboardButton(text="🏠 Выйти в меню", callback_data="main_menu")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_stats_keyboard():
+
     keyboard = [
         [InlineKeyboardButton(text="📖 Мои выученные слова", callback_data="my_learned_words")],
         [InlineKeyboardButton(text="📥 Скачать выученные слова (PDF)", callback_data="download_learned_pdf")],
