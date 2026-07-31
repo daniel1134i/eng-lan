@@ -2823,6 +2823,41 @@ NEW_VOCABULARY_PACKS = [
     ("reservation", "бронирование", "noun", "I made a reservation for two people.", "Путешествия"),
     ("pedestrian", "пешеход", "noun", "This street is for pedestrians only.", "Путешествия"),
     ("downtown", "центр города", "noun", "Let us go downtown for dinner.", "Путешествия"),
+    ("sightseeing", "осмотр достопримечательностей", "noun", "We spent the afternoon sightseeing in Rome.", "Путешествия"),
+    ("passport control", "паспортный контроль", "noun", "Pass through passport control before entering.", "Путешествия"),
+    ("souvenir", "сувенир", "noun", "I bought a small souvenir from Paris.", "Путешествия"),
+    ("itinerary", "маршрут путешествия", "noun", "We prepared a detailed travel itinerary.", "Путешествия"),
+    ("resort", "курорт", "noun", "They stayed at a luxury seaside resort.", "Путешествия"),
+
+    # 💻 IT и Технологии
+    ("developer", "разработчик", "noun", "She works as a senior software developer.", "IT и Технологии"),
+    ("framework", "фреймворк, каркас", "noun", "Django is a popular Python web framework.", "IT и Технологии"),
+    ("database", "база данных", "noun", "The application stores user accounts in a database.", "IT и Технологии"),
+    ("repository", "репозиторий", "noun", "Push your code changes to the remote repository.", "IT и Технологии"),
+    ("refactoring", "рефакторинг кода", "noun", "Code refactoring improved application speed.", "IT и Технологии"),
+    ("encryption", "шифрование", "noun", "Data encryption guarantees confidentiality.", "IT и Технологии"),
+    ("algorithm", "алгоритм", "noun", "The recommendation algorithm is very accurate.", "IT и Технологии"),
+    ("backend", "бэкенд, серверная часть", "noun", "He specializes in backend development.", "IT и Технологии"),
+    ("frontend", "фронтенд, интерфейс", "noun", "React is widely used for frontend web apps.", "IT и Технологии"),
+    ("pipeline", "пайплайн процессов", "noun", "The automated CI/CD pipeline built the app.", "IT и Технологии"),
+
+    # 🍕 Еда и Ресторан
+    ("appetizer", "закуска", "noun", "We ordered garlic bread as an appetizer.", "Еда и Ресторан"),
+    ("dessert", "десерт", "noun", "Chocolate cake is my favorite dessert.", "Еда и Ресторан"),
+    ("beverage", "напиток", "noun", "Hot beverages are available in the lobby.", "Еда и Ресторан"),
+    ("chef", "шеф-повар", "noun", "The chef prepared an exquisite meal.", "Еда и Ресторан"),
+    ("cutlery", "столовые приборы", "noun", "The waiter placed the cutlery on the table.", "Еда и Ресторан"),
+    ("delicious", "вкуснейший", "adjective", "This Italian pizza tastes delicious.", "Еда и Ресторан"),
+    ("recipe", "рецепт", "noun", "Follow the traditional pasta recipe step by step.", "Еда и Ресторан"),
+    ("flavor", "вкус, аромат", "noun", "Vanilla adds a wonderful flavor to the ice cream.", "Еда и Ресторан"),
+
+    # 🌿 Природа и Город
+    ("skyscraper", "небоскреб", "noun", "The skyscraper dominated the city skyline.", "Природа и Город"),
+    ("suburb", "пригород", "noun", "They live in a quiet green suburb.", "Природа и Город"),
+    ("ecosystem", "экосистема", "noun", "Coral reefs support a rich marine ecosystem.", "Природа и Город"),
+    ("landscape", "пейзаж, ландшафт", "noun", "The mountain landscape was truly impressive.", "Природа и Город"),
+    ("environment", "окружающая среда", "noun", "Protecting the environment is essential.", "Природа и Город"),
+    ("horizon", "горизонт", "noun", "The sun sets slowly below the ocean horizon.", "Природа и Город"),
 
     # 💼 3. Бизнес, Финансы и Переговоры
     ("revenue", "выручка, доход", "noun", "Company revenue increased by fifteen percent.", "Бизнес и Работа"),
@@ -2834,6 +2869,9 @@ NEW_VOCABULARY_PACKS = [
     ("bankruptcy", "банкротство", "noun", "The company filed for bankruptcy.", "Бизнес и Работа"),
     ("asset", "актив, ценность", "noun", "Knowledge is your greatest asset.", "Бизнес и Работа"),
     ("liability", "обязательство, пассив", "noun", "They are assessing their financial liabilities.", "Бизнес и Работа"),
+    ("deadline", "крайний срок", "noun", "We must finish the project before the deadline.", "Бизнес и Работа"),
+    ("strategy", "стратегия", "noun", "A clear business strategy drives growth.", "Бизнес и Работа"),
+    ("partnership", "партнерство", "noun", "Both companies agreed on a long-term partnership.", "Бизнес и Работа"),
 
     # 🗣️ 4. Разговорный сленг и Идиомы
     ("awesome", "круто, потрясающе", "adjective", "That movie was absolutely awesome!", "Разговорный сленг"),
@@ -2865,7 +2903,6 @@ NEW_VOCABULARY_PACKS = [
     ("screw up", "накосячить, испортить", "verb", "Do not worry if you screw up once.", "Разговорный сленг"),
     ("couch potato", "лежебока", "noun", "Stop being a couch potato and go outside.", "Разговорный сленг"),
 
-
     # 💖 Комплименты и Похвала
     ("gorgeous", "ослепительная, прекрасная", "adjective", "You look absolutely gorgeous tonight!", "Комплименты"),
     ("stunning", "сшибающий с ног, потрясающий", "adjective", "She has a stunning smile.", "Комплименты"),
@@ -2887,8 +2924,8 @@ NEW_VOCABULARY_PACKS = [
     ("loser", "неудачник, лузер", "noun", "He acts like a total loser.", "Ругательства"),
     ("jerk", "хам, болван", "noun", "Do not be such a rude jerk.", "Ругательства"),
     ("moron", "идиот, дебил", "noun", "Only a moron would do something like that.", "Ругательства"),
-
 ]
+
 
 def assign_category(word: str) -> str:
     w = word.lower()
