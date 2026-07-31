@@ -158,6 +158,20 @@ async def get_user_learned_words_list(telegram_id: int):
             return await cursor.fetchall()
 
 
+async def get_user_learned_movie_quotes(telegram_id: int):
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT w.english_word, w.translation, w.example_sentence, w.category
+            FROM words w
+            JOIN user_words uw ON w.word_id = uw.word_id
+            WHERE uw.user_id = ? AND uw.status = 'learned' AND w.category = 'Цитаты из сериалов'
+            ORDER BY w.word_id DESC
+        """, (telegram_id,)) as cursor:
+            return await cursor.fetchall()
+
+
+
 # ----------------- WORDS & LEARNING -----------------
 
 async def get_user_selected_category(telegram_id: int) -> str:

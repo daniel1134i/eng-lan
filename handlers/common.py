@@ -323,13 +323,51 @@ async def cb_mode_movie_quote(call: CallbackQuery):
 
 @router.callback_query(F.data == "movie_know_word")
 async def cb_movie_know_word(call: CallbackQuery):
-    await call.answer("👍 Отлично! Запомнили эту фразу!", show_alert=True)
+    user_id = call.from_user.id
+    # Получаем последнее слово цитаты для фиксации его как выученное
+    from database.db import get_db
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT word_id FROM words WHERE category = 'Цитаты из сериалов' ORDER BY RANDOM() LIMIT 1") as cursor:
+            row = await cursor.fetchone()
+            if row:
+                from database.models import mark_word_as_learned
+                await mark_word_as_learned(user_id, row['word_id'])
+
+    await call.answer("⭐ Кадр/Фраза отправлена в выученные!", show_alert=True)
     await cb_mode_movie_quote(call)
 
 @router.callback_query(F.data == "movie_dont_know_word")
 async def cb_movie_dont_know_word(call: CallbackQuery):
-    await call.answer("💡 Ничего страшного! Повторим эту фразу снова.", show_alert=True)
+    await call.answer("💡 Отправляем фразу на повторение!", show_alert=True)
     await cb_mode_movie_quote(call)
+
+@router.callback_query(F.data == "my_learned_movie_quotes")
+async def cb_my_learned_movie_quotes(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.models import get_user_learned_movie_quotes
+    quotes = await get_user_learned_movie_quotes(user_id)
+
+    if not quotes:
+        text = (
+            f"🎬 <b>Выученные фразы из сериалов</b>\n\n"
+            f"У вас пока нет выученных кадров из сериалов!\n"
+            f"В режиме <b>«🎬 Кадр из сериала»</b> нажимайте <i>«✅ Уже знаю»</i>, чтобы сохранять их сюда."
+        )
+    else:
+        list_items = []
+        for q in quotes[:30]:
+            list_items.append(f"• <b>{q['english_word'].capitalize()}</b> — {q['translation']}\n  <i>{q['example_sentence']}</i>")
+        
+        list_str = "\n\n".join(list_items)
+        text = (
+            f"🎬 <b>Ваши выученные фразы из сериалов ({len(quotes)}):</b>\n\n"
+            f"{list_str}"
+        )
+
+    await call.message.answer(text, parse_mode="HTML", reply_markup=get_back_to_stats_keyboard())
+    await call.answer()
+
 
 
 
