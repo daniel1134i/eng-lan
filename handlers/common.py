@@ -238,15 +238,23 @@ async def cb_mode_movie_quote(call: CallbackQuery):
         await call.answer("Раздел цитат пополняется...", show_alert=True)
         return
 
-    text = (
-        f"🎬 <b>ЦИТАТЫ ИЗ КУЛЬТОВЫХ СЕРИАЛОВ</b>\n\n"
-        f"🔤 Изучаемое слово: <b>{word['english_word'].capitalize()}</b>\n"
+    caption = (
+        f"🎬 <b>КАДР ИЗ СЕРИАЛА</b>\n\n"
+        f"🔤 Слово: <b>{word['english_word'].capitalize()}</b>\n"
         f"🇷🇺 Перевод: <b>{word['translation']}</b>\n\n"
-        f"💬 <b>Цитата из сериала:</b>\n"
+        f"💬 <b>Реплика:</b>\n"
         f"{word['example_sentence']}"
     )
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+
+    if word['video_url']:
+        from aiogram.types import URLInputFile
+        video_file = URLInputFile(word['video_url'])
+        await call.message.answer_animation(animation=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    else:
+        await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+
     await call.answer()
+
 
 
 @router.message(F.text)

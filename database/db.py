@@ -84,6 +84,12 @@ async def init_db():
         except Exception:
             pass
 
+        try:
+            await db.execute("ALTER TABLE words ADD COLUMN video_url TEXT")
+        except Exception:
+            pass
+
+
         # Миграции полей если таблицы уже созданы
 
         try:

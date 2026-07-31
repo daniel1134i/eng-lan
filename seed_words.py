@@ -2913,15 +2913,16 @@ NEW_VOCABULARY_PACKS = [
     ("flawless", "безупречный, идеальный", "adjective", "Her English pronunciation is flawless.", "Комплименты"),
     ("captivating", "пленительный, завораживающий", "adjective", "She gave a captivating performance.", "Комплименты"),
 
-    # 🎬 Цитаты из культовых сериалов
-    ("family", "семья, родня", "noun", "🎬 <b>Клан Сопрано:</b> <i>'There is no promotion here. This is a family.'</i> — Tony Soprano", "Цитаты из сериалов"),
-    ("respect", "уважение", "noun", "🎬 <b>Клан Сопрано:</b> <i>'Those who want respect, give respect.'</i> — Tony Soprano", "Цитаты из сериалов"),
-    ("danger", "опасность", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am not in danger, Skyler. I am the danger!'</i> — Walter White", "Цитаты из сериалов"),
-    ("empire", "империя", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am in the empire business.'</i> — Walter White", "Цитаты из сериалов"),
-    ("lawyer", "адвокат, юрист", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Did you know that you have rights? Better Call Saul!'</i> — Saul Goodman", "Цитаты из сериалов"),
-    ("winner", "победитель", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Winners take it all.'</i> — Jimmy McGill", "Цитаты из сериалов"),
-    ("saving people", "спасение людей", "phrase", "🎬 <b>Сверхъестественное:</b> <i>'Saving people, hunting things. The family business.'</i> — Dean Winchester", "Цитаты из сериалов"),
-    ("monsters", "монстры, чудовища", "noun", "🎬 <b>Сверхъестественное:</b> <i>'Driver picks the music, shotgun shuts his mouth.'</i> — Dean Winchester", "Цитаты из сериалов"),
+    # 🎬 Цитаты и Видео-клипы из культовых сериалов
+    ("family", "семья, родня", "noun", "🎬 <b>Клан Сопрано:</b> <i>'There is no promotion here. This is a family.'</i> — Tony Soprano", "Цитаты из сериалов", "https://media.giphy.com/media/tTDlx5ZQQug2Ph218n/giphy.mp4"),
+    ("respect", "уважение", "noun", "🎬 <b>Клан Сопрано:</b> <i>'Those who want respect, give respect.'</i> — Tony Soprano", "Цитаты из сериалов", "https://media.giphy.com/media/xT5LMP28g6e4Jk8oVO/giphy.mp4"),
+    ("danger", "опасность", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am not in danger, Skyler. I am the danger!'</i> — Walter White", "Цитаты из сериалов", "https://media.giphy.com/media/3oFzmkkwfOGlzZ0gso/giphy.mp4"),
+    ("empire", "империя", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am in the empire business.'</i> — Walter White", "Цитаты из сериалов", "https://media.giphy.com/media/NUBp5KcV0PJBe/giphy.mp4"),
+    ("lawyer", "адвокат, юрист", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Did you know that you have rights? Better Call Saul!'</i> — Saul Goodman", "Цитаты из сериалов", "https://media.giphy.com/media/bsxyox5vTRrHPg85W2/giphy.mp4"),
+    ("winner", "победитель", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Winners take it all.'</i> — Jimmy McGill", "Цитаты из сериалов", "https://media.giphy.com/media/l41Yqz9pY7v4W7xO8/giphy.mp4"),
+    ("saving people", "спасение людей", "phrase", "🎬 <b>Сверхъестественное:</b> <i>'Saving people, hunting things. The family business.'</i> — Dean Winchester", "Цитаты из сериалов", "https://media.giphy.com/media/v0eHX3n28wvoQ/giphy.mp4"),
+    ("monsters", "монстры, чудовища", "noun", "🎬 <b>Сверхъестественное:</b> <i>'Driver picks the music, shotgun shuts his mouth.'</i> — Dean Winchester", "Цитаты из сериалов", "https://media.giphy.com/media/agwRnv2SSH4yY/giphy.mp4"),
+
 
     # 💬 Фразовые глаголы (Phrasal Verbs)
     ("give up", "сдаваться, бросать", "verb", "Never give up on your dreams.", "Фразовые глаголы"),
@@ -3014,8 +3015,9 @@ async def seed():
 
     for item in NEW_VOCABULARY_PACKS:
         eng, tr, pos, ex, cat = item[0], item[1], item[2], item[3], item[4]
+        video_url = item[5] if len(item) > 5 else None
         ctx, syn = generate_insights_and_contexts(eng, tr, pos, ex)
-        words_data.append((eng, tr, pos, ex, cat, syn, ctx))
+        words_data.append((eng, tr, pos, ex, cat, syn, ctx, video_url))
 
 
     async with get_db() as db:
@@ -3025,10 +3027,11 @@ async def seed():
         await db.commit()
 
         await db.executemany("""
-            INSERT OR IGNORE INTO words (english_word, translation, part_of_speech, example_sentence, category, synonyms, context_examples)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, words_data)
+            INSERT OR IGNORE INTO words (english_word, translation, part_of_speech, example_sentence, category, synonyms, context_examples, video_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, [w if len(w) == 8 else (w[0], w[1], w[2], w[3], w[4], w[5], w[6], None) for w in words_data])
         await db.commit()
+
 
         async with db.execute("SELECT COUNT(*) as cnt FROM words") as cursor:
             row = await cursor.fetchone()
