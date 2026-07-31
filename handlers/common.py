@@ -49,25 +49,17 @@ def make_progress_bar(percentage: float, length: int = 10) -> str:
     bar = '█' * filled_length + '░' * (length - filled_length)
     return bar
 
-@router.message(Command("update_bot"))
-async def cmd_update_bot(message: Message):
-    status_msg = await message.answer(
-        "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА ЗАПУЩЕНА</b>\n\n"
-        "⏳ <i>1/2 Связываемся с репозиторием GitHub (git pull origin main)...</i>",
-        parse_mode="HTML"
-    )
+async def run_update_task(status_msg: Message):
     import asyncio
     import sys
-
     try:
-        # Выполняем git pull асинхронно
         proc_git = await asyncio.create_subprocess_shell(
             "git pull origin main",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=os.getcwd()
         )
-        stdout_git, stderr_git = await asyncio.wait_for(proc_git.communicate(), timeout=30.0)
+        stdout_git, stderr_git = await proc_git.communicate()
         output_text = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
 
         await status_msg.edit_text(
@@ -84,7 +76,7 @@ async def cmd_update_bot(message: Message):
             stderr=asyncio.subprocess.PIPE,
             cwd=os.getcwd()
         )
-        stdout_seed, _ = await asyncio.wait_for(proc_seed.communicate(), timeout=30.0)
+        stdout_seed, _ = await proc_seed.communicate()
         seed_text = stdout_seed.decode().strip() if stdout_seed else "База данных актуальна."
 
         res_text = (
@@ -93,13 +85,22 @@ async def cmd_update_bot(message: Message):
             f"<code>{output_text}</code>\n\n"
             f"🔤 <b>Статус Синхронизации БД:</b>\n"
             f"<code>{seed_text}</code>\n\n"
-            f"✨ <i>Все свежие доработки применены!</i>"
+            f"✨ <i>Все свежие доработки применены! Перезапустите бота.</i>"
         )
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
-    except asyncio.TimeoutError:
-        await status_msg.edit_text("⏳ <b>Операция затянулась:</b> Скачивание файла выполняется в фоне.", parse_mode="HTML")
     except Exception as e:
         await status_msg.edit_text(f"❌ <b>Ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
+@router.message(Command("update_bot"))
+async def cmd_update_bot(message: Message):
+    import asyncio
+    status_msg = await message.answer(
+        "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА ЗАПУЩЕНА</b>\n\n"
+        "⏳ <i>1/2 Связываемся с репозиторием GitHub (git pull origin main)...</i>",
+        parse_mode="HTML"
+    )
+    asyncio.create_task(run_update_task(status_msg))
+
 
 
 
