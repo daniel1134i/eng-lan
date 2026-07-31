@@ -280,8 +280,9 @@ async def cb_mode_movie_quote(call: CallbackQuery):
             f"<b>{translation_text}</b>"
         )
         from aiogram.types import FSInputFile
+        from keyboards.inline import get_movie_quote_keyboard
         video_file = FSInputFile(chosen_video_path)
-        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
         await call.answer()
         return
 
@@ -305,14 +306,16 @@ async def cb_mode_movie_quote(call: CallbackQuery):
         f"{word['example_sentence']}"
     )
 
+    from keyboards.inline import get_movie_quote_keyboard
     if word['video_url']:
         from aiogram.types import URLInputFile
         video_file = URLInputFile(word['video_url'])
-        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
     else:
-        await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+        await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
 
     await call.answer()
+
 
 
 

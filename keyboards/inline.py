@@ -124,6 +124,18 @@ def get_sprint_keyboard(is_correct_pair: bool):
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+def get_movie_quote_keyboard():
+    keyboard = [
+        [
+            InlineKeyboardButton(text="🎬 Следующий кадр ➡️", callback_data="mode_movie_quote")
+        ],
+        [
+            InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
 
 def get_stats_keyboard():
 
