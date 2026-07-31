@@ -468,23 +468,33 @@ async def handle_user_custom_word_text(message: Message):
         return
 
     if user_id in user_adding_words:
-        text = message.text
-        if "-" in text or "=" in text:
-            delimiter = "-" if "-" in text else "="
-            parts = text.split(delimiter, 1)
+        raw_input = message.text.strip()
+        import re
+        # Гибкое разбиение по любым знакам препинания: -, =, :, ➔, двоеточия или двойным пробелам
+        parts = re.split(r'[-=:\t—–➔]+', raw_input, maxsplit=1)
+        if len(parts) < 2:
+            # Если нет знака препинания, делим по первому русскому слову или пробелу
+            parts = re.split(r'\s+(?=[а-яА-ЯёЁ])', raw_input, maxsplit=1)
+
+        if len(parts) >= 2:
             eng = parts[0].strip()
             tr = parts[1].strip()
+            # Очищаем от случайных лишних знаков
+            eng = re.sub(r'[^a-zA-Z\s\'-]', '', eng)
             if eng and tr:
                 from database.models import add_custom_word_for_user
                 await add_custom_word_for_user(user_id, eng, tr)
                 user_adding_words.remove(user_id)
                 await message.answer(
-                    f"✅ Слово <b>{eng.capitalize()}</b> — <i>{tr}</i> успешно добавлено в <b>⭐ Мои слова</b>!",
+                    f"✅ Слово <b>{eng.capitalize()}</b> — <i>{tr}</i> успешно добавлено в <b>⭐ Мои слова</b>!\n"
+                    f"<i>(Орфография и пунктуация мягко распознаны)</i>",
                     parse_mode="HTML",
                     reply_markup=get_main_menu_keyboard()
                 )
                 return
-        await message.answer("❌ Неверный формат. Пожалуйста, отправь в виде: <code>apple - яблоко</code>", parse_mode="HTML")
+
+        await message.answer("💡 Отправь слово и перевод в любом удобном виде, например: <code>apple яблоко</code> или <code>apple - яблоко</code>", parse_mode="HTML")
+
 
 
 
