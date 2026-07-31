@@ -72,8 +72,13 @@ async def cb_main_menu(call: CallbackQuery):
         f"🏠 <b>Главное меню</b>\n\n"
         f"Готов продолжить обучение? Выбери нужный раздел:"
     )
-    await call.message.edit_text(welcome_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+    try:
+        await call.message.edit_text(welcome_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+    except Exception:
+        await call.message.delete()
+        await call.message.answer(welcome_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     await call.answer()
+
 
 @router.callback_query(F.data == "settings_menu")
 async def cb_settings_menu(call: CallbackQuery):
