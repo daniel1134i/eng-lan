@@ -39,8 +39,6 @@ async def cb_set_category(call: CallbackQuery):
     await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_categories_keyboard(categories, category_name))
 
 
-router = Router()
-
 
 def make_progress_bar(percentage: float, length: int = 10) -> str:
     filled_length = int(round(length * percentage / 100))
