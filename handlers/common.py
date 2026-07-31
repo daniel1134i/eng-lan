@@ -366,8 +366,13 @@ async def cb_mode_movie_quote(call: CallbackQuery):
     from aiogram.types import FSInputFile
     from keyboards.inline import get_movie_quote_keyboard
     video_file = FSInputFile(chosen_video_path)
-    await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
+    try:
+        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard(), request_timeout=60)
+    except Exception as err:
+        # В случае сетевых сбоев серверов Telegram
+        await call.message.answer(f"🎬 <b>КАДР ИЗ СЕРИАЛА ({series_name})</b>\n\n💬 <b>Фраза / Цитата:</b>\n<i>\"{raw_name}\"</i>\n\n🇷🇺 <b>Перевод:</b>\n<b>{translation_text}</b>", parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
     await call.answer()
+
 
 
 @router.callback_query(F.data == "movie_know_word")
