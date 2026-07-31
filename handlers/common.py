@@ -318,9 +318,78 @@ async def cb_mode_movie_quote(call: CallbackQuery):
 
 
 
+user_searching_words = set()
+
+@router.callback_query(F.data == "search_word_prompt")
+async def cb_search_word_prompt(call: CallbackQuery):
+    user_id = call.from_user.id
+    user_searching_words.add(user_id)
+    text = (
+        f"🔍 <b>Поиск слова в словаре</b>\n\n"
+        f"Отправьте мне любое английское или русское слово (например, <code>freedom</code> или <code>свобода</code>).\n"
+        f"Я мгновенно найду его в базе, покажу перевод, примеры и контексты!"
+    )
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    await call.answer()
+
+@router.callback_query(F.data == "weak_words_list")
+async def cb_weak_words_list(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.db import get_db
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT w.english_word, w.translation, uw.repetition_count 
+            FROM user_words uw 
+            JOIN words w ON uw.word_id = w.word_id 
+            WHERE uw.user_id = ? AND uw.status = 'learning'
+            ORDER BY uw.repetition_count ASC LIMIT 10
+        """, (user_id,)) as cursor:
+            rows = await cursor.fetchall()
+
+    if not rows:
+        text = (
+            f"⚠️ <b>Ваши трудные слова</b>\n\n"
+            f"У вас пока нет проблемных слов! Продолжайте проходить карточки и викторины."
+        )
+    else:
+        list_str = "\n".join([f"• <b>{r['english_word'].capitalize()}</b> — {r['translation']}" for r in rows])
+        text = (
+            f"⚠️ <b>Ваши трудные слова (требуют повторения):</b>\n\n"
+            f"{list_str}\n\n"
+            f"<i>Рекомендуем пройти викторину или карточки для их закрепления!</i>"
+        )
+
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    await call.answer()
+
+
 @router.message(F.text)
 async def handle_user_custom_word_text(message: Message):
     user_id = message.from_user.id
+    if user_id in user_searching_words:
+        user_searching_words.remove(user_id)
+        query = message.text.strip().lower()
+        from database.db import get_db
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM words WHERE LOWER(english_word) LIKE ? OR LOWER(translation) LIKE ? LIMIT 1", (f"%{query}%", f"%{query}%")) as cursor:
+                word = await cursor.fetchone()
+
+        if word:
+            res_text = (
+                f"🔍 <b>Результат поиска по запросу '{query}':</b>\n\n"
+                f"🔤 <b>{word['english_word'].capitalize()}</b> — <i>{word['translation']}</i>\n"
+                f"📚 Категория: <b>{word['category']}</b>\n\n"
+                f"💬 Пример: <i>{word['example_sentence']}</i>\n\n"
+                f"{word['context_examples'] if word['context_examples'] else ''}"
+            )
+        else:
+            res_text = f"❌ К сожалению, слово <b>'{query}'</b> не найдено в базе бота."
+
+        await message.answer(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        return
+
     if user_id in user_adding_words:
         text = message.text
         if "-" in text or "=" in text:
@@ -339,6 +408,7 @@ async def handle_user_custom_word_text(message: Message):
                 )
                 return
         await message.answer("❌ Неверный формат. Пожалуйста, отправь в виде: <code>apple - яблоко</code>", parse_mode="HTML")
+
 
 
 

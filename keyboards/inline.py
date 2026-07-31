@@ -11,6 +11,10 @@ def get_main_menu_keyboard():
             InlineKeyboardButton(text="🎬 Кадр из сериала", callback_data="mode_movie_quote")
         ],
         [
+            InlineKeyboardButton(text="🔍 Найти слово", callback_data="search_word_prompt"),
+            InlineKeyboardButton(text="⚠️ Трудные слова", callback_data="weak_words_list")
+        ],
+        [
             InlineKeyboardButton(text="📚 Темы слов", callback_data="categories_menu"),
             InlineKeyboardButton(text="➕ Добавить слово", callback_data="add_custom_word")
         ],
@@ -23,6 +27,7 @@ def get_main_menu_keyboard():
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 
 def get_categories_keyboard(categories: list, selected_category: str = "all"):
