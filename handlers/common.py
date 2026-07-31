@@ -337,6 +337,8 @@ async def cb_movie_know_word(call: CallbackQuery):
     await call.answer("⭐ Кадр/Фраза отправлена в выученные!", show_alert=True)
     await cb_mode_movie_quote(call)
 
+user_checking_movie_quote = {}
+
 @router.callback_query(F.data == "review_learned_movie_quotes")
 async def cb_review_learned_movie_quotes(call: CallbackQuery):
     user_id = call.from_user.id
@@ -349,17 +351,18 @@ async def cb_review_learned_movie_quotes(call: CallbackQuery):
 
     import random
     quote = random.choice(quotes)
-    
-    caption = (
-        f"🔄 <b>ПРОВЕРКА ВЫУЧЕННОГО КАДРА</b>\n\n"
-        f"🔤 Слово / Фраза: <b>{quote['english_word'].capitalize()}</b>\n"
-        f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n\n"
-        f"💬 <b>Реплика героя:</b>\n"
-        f"<i>{quote['example_sentence']}</i>"
+    user_checking_movie_quote[user_id] = quote
+
+    text = (
+        f"✍️ <b>ПРОВЕРКА ВЫУЧЕННОГО КАДРА ИЗ СЕРИАЛА</b>\n\n"
+        f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n"
+        f"💬 Описание сцены: <i>{quote['example_sentence']}</i>\n\n"
+        f"<b>Напишите эту фразу на английском языке в чат:</b>\n"
+        f"<i>(Ошибки в пунктуации, кавычках, знаках препинания и мелкие опечатки НЕ учитываются!)</i>"
     )
-    from keyboards.inline import get_movie_quote_keyboard
-    await call.message.answer(caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
-    await call.answer("🔄 Случайный выученный кадр для проверки!")
+    await call.message.answer(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    await call.answer()
+
 
 
 @router.callback_query(F.data == "my_learned_movie_quotes")
@@ -444,6 +447,44 @@ async def cb_weak_words_list(call: CallbackQuery):
 @router.message(F.text)
 async def handle_user_custom_word_text(message: Message):
     user_id = message.from_user.id
+
+    # Проверка выученного кадра из сериала
+    if user_id in user_checking_movie_quote:
+        quote = user_checking_movie_quote.pop(user_id)
+        user_input = message.text.strip().lower()
+        target_text = quote['english_word'].strip().lower()
+
+        import re
+        from difflib import SequenceMatcher
+
+        # Очистка от любой пунктуации и знаков препинания
+        clean_input = re.sub(r'[^\w\s]', '', user_input)
+        clean_target = re.sub(r'[^\w\s]', '', target_text)
+
+        # Вычисление схожести текстов (допуск опечаток до 75% совпадения)
+        similarity = SequenceMatcher(None, clean_input, clean_target).ratio()
+
+        if clean_input == clean_target or similarity >= 0.75:
+            text = (
+                f"🎉 <b>Блестяще! Вы правильно вспомнили фразу!</b>\n\n"
+                f"🔤 Оригинал: <b>{quote['english_word'].capitalize()}</b>\n"
+                f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n"
+                f"💬 Реплика: <i>{quote['example_sentence']}</i>\n\n"
+                f"<i>(Совпадение: {int(similarity * 100)}%, опечатки и знаки препинания мягко прощены)</i>"
+            )
+        else:
+            text = (
+                f"💡 <b>Почти получилось!</b>\n\n"
+                f"Ваш ответ: <i>{message.text}</i>\n"
+                f"Правильная фраза: <b>{quote['english_word'].capitalize()}</b>\n"
+                f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n\n"
+                f"<i>Не переживайте, тренируйтесь чаще!</i>"
+            )
+
+        from keyboards.inline import get_movie_quote_keyboard
+        await message.answer(text, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
+        return
+
     if user_id in user_searching_words:
         user_searching_words.remove(user_id)
         query = message.text.strip().lower()
