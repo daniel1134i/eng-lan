@@ -2913,15 +2913,16 @@ NEW_VOCABULARY_PACKS = [
     ("flawless", "безупречный, идеальный", "adjective", "Her English pronunciation is flawless.", "Комплименты"),
     ("captivating", "пленительный, завораживающий", "adjective", "She gave a captivating performance.", "Комплименты"),
 
-    # 🎬 Цитаты и Видео-клипы из культовых сериалов
-    ("family", "семья, родня", "noun", "🎬 <b>Клан Сопрано:</b> <i>'There is no promotion here. This is a family.'</i> — Tony Soprano", "Цитаты из сериалов", "https://media.giphy.com/media/tTDlx5ZQQug2Ph218n/giphy.mp4"),
-    ("respect", "уважение", "noun", "🎬 <b>Клан Сопрано:</b> <i>'Those who want respect, give respect.'</i> — Tony Soprano", "Цитаты из сериалов", "https://media.giphy.com/media/xT5LMP28g6e4Jk8oVO/giphy.mp4"),
-    ("danger", "опасность", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am not in danger, Skyler. I am the danger!'</i> — Walter White", "Цитаты из сериалов", "https://media.giphy.com/media/3oFzmkkwfOGlzZ0gso/giphy.mp4"),
-    ("empire", "империя", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am in the empire business.'</i> — Walter White", "Цитаты из сериалов", "https://media.giphy.com/media/NUBp5KcV0PJBe/giphy.mp4"),
-    ("lawyer", "адвокат, юрист", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Did you know that you have rights? Better Call Saul!'</i> — Saul Goodman", "Цитаты из сериалов", "https://media.giphy.com/media/bsxyox5vTRrHPg85W2/giphy.mp4"),
-    ("winner", "победитель", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Winners take it all.'</i> — Jimmy McGill", "Цитаты из сериалов", "https://media.giphy.com/media/l41Yqz9pY7v4W7xO8/giphy.mp4"),
-    ("saving people", "спасение людей", "phrase", "🎬 <b>Сверхъестественное:</b> <i>'Saving people, hunting things. The family business.'</i> — Dean Winchester", "Цитаты из сериалов", "https://media.giphy.com/media/v0eHX3n28wvoQ/giphy.mp4"),
-    ("monsters", "монстры, чудовища", "noun", "🎬 <b>Сверхъестественное:</b> <i>'Driver picks the music, shotgun shuts his mouth.'</i> — Dean Winchester", "Цитаты из сериалов", "https://media.giphy.com/media/agwRnv2SSH4yY/giphy.mp4"),
+    # 🎬 Цитаты из культовых сериалов
+    ("family", "семья, родня", "noun", "🎬 <b>Клан Сопрано:</b> <i>'There is no promotion here. This is a family.'</i> — Tony Soprano", "Цитаты из сериалов"),
+    ("respect", "уважение", "noun", "🎬 <b>Клан Сопрано:</b> <i>'Those who want respect, give respect.'</i> — Tony Soprano", "Цитаты из сериалов"),
+    ("danger", "опасность", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am not in danger, Skyler. I am the danger!'</i> — Walter White", "Цитаты из сериалов"),
+    ("empire", "империя", "noun", "🎬 <b>Во все тяжкие:</b> <i>'I am in the empire business.'</i> — Walter White", "Цитаты из сериалов"),
+    ("lawyer", "адвокат, юрист", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Did you know that you have rights? Better Call Saul!'</i> — Saul Goodman", "Цитаты из сериалов"),
+    ("winner", "победитель", "noun", "🎬 <b>Лучше звоните Солу:</b> <i>'Winners take it all.'</i> — Jimmy McGill", "Цитаты из сериалов"),
+    ("saving people", "спасение людей", "phrase", "🎬 <b>Сверхъестественное:</b> <i>'Saving people, hunting things. The family business.'</i> — Dean Winchester", "Цитаты из сериалов"),
+    ("monsters", "монстры, чудовища", "noun", "🎬 <b>Сверхъестественное:</b> <i>'Driver picks the music, shotgun shuts his mouth.'</i> — Dean Winchester", "Цитаты из сериалов"),
+
 
 
     # 💬 Фразовые глаголы (Phrasal Verbs)
