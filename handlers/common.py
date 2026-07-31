@@ -56,14 +56,19 @@ async def cmd_update_bot(message: Message):
         "⏳ <i>1/2 Связываемся с репозиторием GitHub (git pull origin main)...</i>",
         parse_mode="HTML"
     )
-    import subprocess
+    import asyncio
     import sys
 
     try:
-        env = os.environ.copy()
-        # Выполняем git pull через встроенный оболочку shell
-        git_result = subprocess.run("git pull origin main", shell=True, capture_output=True, text=True, cwd=os.getcwd(), env=env)
-        output_text = git_result.stdout.strip() if git_result.stdout else git_result.stderr.strip()
+        # Выполняем git pull асинхронно
+        proc_git = await asyncio.create_subprocess_shell(
+            "git pull origin main",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=os.getcwd()
+        )
+        stdout_git, stderr_git = await asyncio.wait_for(proc_git.communicate(), timeout=30.0)
+        output_text = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
 
         await status_msg.edit_text(
             "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА</b>\n\n"
@@ -73,8 +78,14 @@ async def cmd_update_bot(message: Message):
         )
 
         python_exec = sys.executable or "python3"
-        seed_result = subprocess.run(f"{python_exec} seed_words.py", shell=True, capture_output=True, text=True, cwd=os.getcwd(), env=env)
-        seed_text = seed_result.stdout.strip() if seed_result.stdout else "База данных актуальна."
+        proc_seed = await asyncio.create_subprocess_shell(
+            f"{python_exec} seed_words.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=os.getcwd()
+        )
+        stdout_seed, _ = await asyncio.wait_for(proc_seed.communicate(), timeout=30.0)
+        seed_text = stdout_seed.decode().strip() if stdout_seed else "База данных актуальна."
 
         res_text = (
             f"🎉 <b>ОБНОВЛЕНИЕ БОТА УСПЕШНО ЗАВЕРШЕНО!</b>\n\n"
@@ -82,11 +93,14 @@ async def cmd_update_bot(message: Message):
             f"<code>{output_text}</code>\n\n"
             f"🔤 <b>Статус Синхронизации БД:</b>\n"
             f"<code>{seed_text}</code>\n\n"
-            f"✨ <i>Все свежие доработки, новые слова и клипы применены!</i>"
+            f"✨ <i>Все свежие доработки применены!</i>"
         )
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+    except asyncio.TimeoutError:
+        await status_msg.edit_text("⏳ <b>Операция затянулась:</b> Скачивание файла выполняется в фоне.", parse_mode="HTML")
     except Exception as e:
-        await status_msg.edit_text(f"❌ <b>Произошла ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+        await status_msg.edit_text(f"❌ <b>Ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
 
 
 
