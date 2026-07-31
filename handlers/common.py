@@ -287,83 +287,73 @@ async def cb_mode_movie_quote(call: CallbackQuery):
     if os.path.exists(videos_base_dir):
         for root, dirs, files in os.walk(videos_base_dir):
             for file in files:
-                if file.lower().endswith(('.mp4', '.mov', '.mkv')):
+                if file.lower().endswith(('.mp4', '.mov', '.mkv')) and not file.startswith('.'):
                     all_local_videos.append(os.path.join(root, file))
 
-    if all_local_videos:
-        chosen_video_path = random.choice(all_local_videos)
-        series_name = os.path.basename(os.path.dirname(chosen_video_path))
-        raw_name = os.path.splitext(os.path.basename(chosen_video_path))[0]
-
-        # Авто-поиск перевода в базе данных по сходству или дефолтный словарь
-        translation_text = None
-        from database.db import get_db
-        async with get_db() as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT translation FROM words WHERE LOWER(english_word) LIKE ? OR LOWER(example_sentence) LIKE ?", 
-                                  (f"%{raw_name.lower()}%", f"%{raw_name.lower()}%")) as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    translation_text = row['translation']
-
-        # Известные быстрые переводы для файлов
-        translations_dict = {
-            "go fuck yourself": "Пошел нахуй!",
-            "alright, i give up, what then?": "Ладно, я сдаюсь, и что дальше?",
-            "anybody around here love the word \"jimmy choo shoes\"?": "Кто-нибудь здесь любит словосочетание «туфли Jimmy Choo»?",
-            "i give him up, we can give the whole fucking thing up.": "Если я сдам его, мы можем нахрен сворачивать всё наше дело.",
-            "stop getting cunty": "Перестань выпендриваться / стервозничать.",
-            "what's his name again?": "Как его там снова зовут?"
-        }
-
-
-        if not translation_text:
-            cleaned_key = raw_name.lower().strip().rstrip(".")
-            translation_text = translations_dict.get(cleaned_key, "Разговорная фраза из сериала")
-
-        caption = (
-            f"🎬 <b>КАДР ИЗ СЕРИАЛА ({series_name})</b>\n\n"
-            f"💬 <b>Фраза / Цитата:</b>\n"
-            f"<i>\"{raw_name}\"</i>\n\n"
-            f"🇷🇺 <b>Перевод:</b>\n"
-            f"<b>{translation_text}</b>"
-        )
-        from aiogram.types import FSInputFile
-        from keyboards.inline import get_movie_quote_keyboard
-        video_file = FSInputFile(chosen_video_path)
-        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
-        await call.answer()
+    if not all_local_videos:
+        await call.answer("Локальные видеоролики загружаются на сервер...", show_alert=True)
         return
 
+    chosen_video_path = random.choice(all_local_videos)
+    series_name = os.path.basename(os.path.dirname(chosen_video_path))
+    raw_name = os.path.splitext(os.path.basename(chosen_video_path))[0]
 
-    # Fallback если пока локальных файлов нет
+    # Авто-поиск перевода в базе данных по сходству или дефолтный словарь
+    translation_text = None
     from database.db import get_db
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM words WHERE category = 'Цитаты из сериалов' ORDER BY RANDOM() LIMIT 1") as cursor:
-            word = await cursor.fetchone()
+        async with db.execute("SELECT translation FROM words WHERE LOWER(english_word) LIKE ? OR LOWER(example_sentence) LIKE ?", 
+                              (f"%{raw_name.lower()}%", f"%{raw_name.lower()}%")) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                translation_text = row['translation']
 
-    if not word:
-        await call.answer("Раздел цитат пополняется...", show_alert=True)
-        return
+    # Известные переводы
+    translations_dict = {
+        "go fuck yourself": "Пошел нахуй!",
+        "alright, i give up, what then?": "Ладно, я сдаюсь, и что дальше?",
+        "anybody around here love the word \"jimmy choo shoes\"?": "Кто-нибудь здесь любит словосочетание «туфли Jimmy Choo»?",
+        "i give him up, we can give the whole fucking thing up.": "Если я сдам его, мы можем нахрен сворачивать всё наше дело.",
+        "stop getting cunty": "Перестань выпендриваться / стервозничать.",
+        "what's his name again?": "Как его там снова зовут?",
+        "only you can get them for us.": "Только ты можешь достать их для нас.",
+        "- so what? - \"so what\"?": "- Ну и что? - «Ну и что»?!",
+        "and i... i think about you all the time.": "И я... я думал о тебе всё это время.",
+        "heisenberg, come on, break it out.": "Хайзенберг, давай же, выкатывай это.",
+        "hey, come on. what, you gonna argue?": "Эй, давай. Что, спорить будешь?",
+        "i don't know, how about taco cabeza?": "Я не знаю, как насчет Тако Кабеса?",
+        "listen, old man, talk is talk.": "Слушай, старик, разговоры разговорчиками.",
+        "nice and public. open 24 hours.": "Хорошо и публично. Открыто 24 часа.",
+        "of never once believing in yourself?": "О том, чтобы ни разу в себя не поверить?",
+        "okay. you got me there.": "Ладно. Здесь ты меня умыл.",
+        "seventeen and a half. minus the half for wasting my time.": "Семнадцать с половиной. Минус пол-пакета за то, что потратил мое время.",
+        "so you do have a plan.": "Значит, план у тебя все-таки есть.",
+        "what did you say?": "Что ты сказал?",
+        "what, they close the mall or something?": "Что, торговый центр закрылся или типа того?",
+        "you got something to say?": "Тебе есть что сказать?",
+        "you told me 2 pounds,": "Ты сказал мне 2 фунта,",
+        "in his car, not in the school.": "В его машине, а не в школе.",
+        "we just can't say for sure.": "Мы просто не можем утверждать наверняка."
+    }
+
+    if not translation_text:
+        cleaned_key = raw_name.lower().strip().rstrip(".")
+        translation_text = translations_dict.get(cleaned_key, "Разговорная фраза из сериала")
 
     caption = (
-        f"🎬 <b>КАДР ИЗ СЕРИАЛА</b>\n\n"
-        f"🔤 Слово / Фраза: <b>{word['english_word'].capitalize()}</b>\n"
-        f"🇷🇺 Перевод: <b>{word['translation']}</b>\n\n"
-        f"💬 <b>Реплика героя:</b>\n"
-        f"{word['example_sentence']}"
+        f"🎬 <b>КАДР ИЗ СЕРИАЛА ({series_name})</b>\n\n"
+        f"💬 <b>Фраза / Цитата:</b>\n"
+        f"<i>\"{raw_name}\"</i>\n\n"
+        f"🇷🇺 <b>Перевод:</b>\n"
+        f"<b>{translation_text}</b>"
     )
-
+    from aiogram.types import FSInputFile
     from keyboards.inline import get_movie_quote_keyboard
-    if word['video_url']:
-        from aiogram.types import URLInputFile
-        video_file = URLInputFile(word['video_url'])
-        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
-    else:
-        await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
-
+    video_file = FSInputFile(chosen_video_path)
+    await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
     await call.answer()
+
 
 @router.callback_query(F.data == "movie_know_word")
 async def cb_movie_know_word(call: CallbackQuery):

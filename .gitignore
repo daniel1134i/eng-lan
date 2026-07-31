@@ -5,5 +5,5 @@ bot.sqlite3
 .DS_Store
 .venv/
 venv/
-assets/videos/
+
 
