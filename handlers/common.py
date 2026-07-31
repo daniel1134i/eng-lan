@@ -316,6 +316,17 @@ async def cb_mode_movie_quote(call: CallbackQuery):
 
     await call.answer()
 
+@router.callback_query(F.data == "movie_know_word")
+async def cb_movie_know_word(call: CallbackQuery):
+    await call.answer("👍 Отлично! Запомнили эту фразу!", show_alert=True)
+    await cb_mode_movie_quote(call)
+
+@router.callback_query(F.data == "movie_dont_know_word")
+async def cb_movie_dont_know_word(call: CallbackQuery):
+    await call.answer("💡 Ничего страшного! Повторим эту фразу снова.", show_alert=True)
+    await cb_mode_movie_quote(call)
+
+
 
 
 
