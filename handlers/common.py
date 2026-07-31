@@ -259,13 +259,14 @@ async def cb_mode_movie_quote(call: CallbackQuery):
 
         # Известные быстрые переводы для файлов
         translations_dict = {
-            "go fuck yourself": "Пошел нах*й!",
+            "go fuck yourself": "Пошел нахуй!",
             "alright, i give up, what then?": "Ладно, я сдаюсь, и что дальше?",
             "anybody around here love the word \"jimmy choo shoes\"?": "Кто-нибудь здесь любит словосочетание «туфли Jimmy Choo»?",
             "i give him up, we can give the whole fucking thing up.": "Если я сдам его, мы можем нахрен сворачивать всё наше дело.",
             "stop getting cunty": "Перестань выпендриваться / стервозничать.",
             "what's his name again?": "Как его там снова зовут?"
         }
+
 
         if not translation_text:
             cleaned_key = raw_name.lower().strip().rstrip(".")
