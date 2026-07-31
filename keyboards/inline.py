@@ -92,12 +92,16 @@ def get_quiz_keyboard(word_id: int, options: list):
     keyboard.append(row1)
     keyboard.append(row2)
     keyboard.append([
+        InlineKeyboardButton(text="❓ Не знаю это слово", callback_data=f"dont_know_quiz_{word_id}")
+    ])
+    keyboard.append([
         InlineKeyboardButton(text="✅ Уже знаю это слово", callback_data=f"know_word_quiz_{word_id}")
     ])
     keyboard.append([
         InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
     ])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_stats_keyboard():
     keyboard = [

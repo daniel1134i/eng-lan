@@ -74,10 +74,25 @@ async def cb_answer_quiz(call: CallbackQuery):
         await call.answer(f"❌ Ошибка! Правильный перевод: {correct_option}", show_alert=True)
         await mark_word_as_learning(user_id, word_id)
 
-
-
-    # Удаляем из кэша
     active_quizzes.pop(f"{user_id}_{word_id}", None)
-    
-    # Следующий вопрос
     await send_next_quiz(call)
+
+
+
+
+@router.callback_query(F.data.startswith("dont_know_quiz_"))
+async def cb_dont_know_quiz(call: CallbackQuery):
+    word_id = int(call.data.split("_")[3])
+    user_id = call.from_user.id
+    quiz_data = active_quizzes.get(f"{user_id}_{word_id}")
+
+    if quiz_data:
+        correct_option = quiz_data["correct"]
+        await call.answer(f"💡 Правильный перевод: {correct_option}", show_alert=True)
+    else:
+        await call.answer("Загружаем следующий вопрос...")
+
+    await mark_word_as_learning(user_id, word_id)
+    active_quizzes.pop(f"{user_id}_{word_id}", None)
+    await send_next_quiz(call)
+
