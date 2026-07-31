@@ -246,16 +246,44 @@ async def cb_mode_movie_quote(call: CallbackQuery):
         series_name = os.path.basename(os.path.dirname(chosen_video_path))
         raw_name = os.path.splitext(os.path.basename(chosen_video_path))[0]
 
+        # Авто-поиск перевода в базе данных по сходству или дефолтный словарь
+        translation_text = None
+        from database.db import get_db
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT translation FROM words WHERE LOWER(english_word) LIKE ? OR LOWER(example_sentence) LIKE ?", 
+                                  (f"%{raw_name.lower()}%", f"%{raw_name.lower()}%")) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    translation_text = row['translation']
+
+        # Известные быстрые переводы для файлов
+        translations_dict = {
+            "go fuck yourself": "Пошел нах*й!",
+            "alright, i give up, what then?": "Ладно, я сдаюсь, и что дальше?",
+            "anybody around here love the word \"jimmy choo shoes\"?": "Кто-нибудь здесь любит словосочетание «туфли Jimmy Choo»?",
+            "i give him up, we can give the whole fucking thing up.": "Если я сдам его, мы можем нахрен сворачивать всё наше дело.",
+            "stop getting cunty": "Перестань выпендриваться / стервозничать.",
+            "what's his name again?": "Как его там снова зовут?"
+        }
+
+        if not translation_text:
+            cleaned_key = raw_name.lower().strip().rstrip(".")
+            translation_text = translations_dict.get(cleaned_key, "Разговорная фраза из сериала")
+
         caption = (
             f"🎬 <b>КАДР ИЗ СЕРИАЛА ({series_name})</b>\n\n"
             f"💬 <b>Фраза / Цитата:</b>\n"
-            f"<i>\"{raw_name}\"</i>"
+            f"<i>\"{raw_name}\"</i>\n\n"
+            f"🇷🇺 <b>Перевод:</b>\n"
+            f"<b>{translation_text}</b>"
         )
         from aiogram.types import FSInputFile
         video_file = FSInputFile(chosen_video_path)
         await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
         await call.answer()
         return
+
 
     # Fallback если пока локальных файлов нет
     from database.db import get_db
