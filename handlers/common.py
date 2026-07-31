@@ -355,13 +355,26 @@ async def cb_review_learned_movie_quotes(call: CallbackQuery):
 
     text = (
         f"✍️ <b>ПРОВЕРКА ВЫУЧЕННОГО КАДРА ИЗ СЕРИАЛА</b>\n\n"
-        f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n"
-        f"💬 Описание сцены: <i>{quote['example_sentence']}</i>\n\n"
+        f"💬 <b>Контекст / Сцена:</b>\n"
+        f"<i>{quote['example_sentence']}</i>\n\n"
         f"<b>Напишите эту фразу на английском языке в чат:</b>\n"
-        f"<i>(Ошибки в пунктуации, кавычках, знаках препинания и мелкие опечатки НЕ учитываются!)</i>"
+        f"<i>(Если сложно вспомнить — нажмите «💡 Подсказка» ниже)</i>"
     )
-    await call.message.answer(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    from keyboards.inline import get_movie_quote_review_keyboard
+    await call.message.answer(text, parse_mode="HTML", reply_markup=get_movie_quote_review_keyboard())
     await call.answer()
+
+@router.callback_query(F.data == "movie_quote_hint")
+async def cb_movie_quote_hint(call: CallbackQuery):
+    user_id = call.from_user.id
+    quote = user_checking_movie_quote.get(user_id)
+
+    if not quote:
+        await call.answer("Загрузите новую фразу для проверки...", show_alert=True)
+        return
+
+    await call.answer(f"💡 Перевод: {quote['translation']}", show_alert=True)
+
 
 
 

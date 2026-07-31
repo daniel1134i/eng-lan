@@ -143,6 +143,18 @@ def get_movie_quote_keyboard():
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+def get_movie_quote_review_keyboard():
+    keyboard = [
+        [
+            InlineKeyboardButton(text="💡 Подсказка (Перевод)", callback_data="movie_quote_hint")
+        ],
+        [
+            InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
 
 
 def get_stats_keyboard():
