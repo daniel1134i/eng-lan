@@ -134,13 +134,15 @@ def get_movie_quote_keyboard():
             InlineKeyboardButton(text="🎬 Следующий кадр ➡️", callback_data="mode_movie_quote")
         ],
         [
-            InlineKeyboardButton(text="⭐ Мои выученные кадры", callback_data="my_learned_movie_quotes")
+            InlineKeyboardButton(text="🔄 Проверить выученные кадры", callback_data="review_learned_movie_quotes"),
+            InlineKeyboardButton(text="⭐ Список выученных", callback_data="my_learned_movie_quotes")
         ],
         [
             InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 
 def get_stats_keyboard():

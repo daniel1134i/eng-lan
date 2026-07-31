@@ -337,10 +337,30 @@ async def cb_movie_know_word(call: CallbackQuery):
     await call.answer("⭐ Кадр/Фраза отправлена в выученные!", show_alert=True)
     await cb_mode_movie_quote(call)
 
-@router.callback_query(F.data == "movie_dont_know_word")
-async def cb_movie_dont_know_word(call: CallbackQuery):
-    await call.answer("💡 Отправляем фразу на повторение!", show_alert=True)
-    await cb_mode_movie_quote(call)
+@router.callback_query(F.data == "review_learned_movie_quotes")
+async def cb_review_learned_movie_quotes(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.models import get_user_learned_movie_quotes
+    quotes = await get_user_learned_movie_quotes(user_id)
+
+    if not quotes:
+        await call.answer("У вас пока нет выученных кадров для проверки! Сначала отметьте кадры кнопкой 'Уже знаю'.", show_alert=True)
+        return
+
+    import random
+    quote = random.choice(quotes)
+    
+    caption = (
+        f"🔄 <b>ПРОВЕРКА ВЫУЧЕННОГО КАДРА</b>\n\n"
+        f"🔤 Слово / Фраза: <b>{quote['english_word'].capitalize()}</b>\n"
+        f"🇷🇺 Перевод: <b>{quote['translation']}</b>\n\n"
+        f"💬 <b>Реплика героя:</b>\n"
+        f"<i>{quote['example_sentence']}</i>"
+    )
+    from keyboards.inline import get_movie_quote_keyboard
+    await call.message.answer(caption, parse_mode="HTML", reply_markup=get_movie_quote_keyboard())
+    await call.answer("🔄 Случайный выученный кадр для проверки!")
+
 
 @router.callback_query(F.data == "my_learned_movie_quotes")
 async def cb_my_learned_movie_quotes(call: CallbackQuery):
