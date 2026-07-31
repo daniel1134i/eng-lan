@@ -77,8 +77,10 @@ def get_reminder_settings_keyboard(current_hour: int = 9):
     if row:
         keyboard.append(row)
 
+    keyboard.append([InlineKeyboardButton(text="📥 Скачать выученные слова (PDF)", callback_data="download_learned_pdf")])
     keyboard.append([InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 
 def get_quiz_keyboard(word_id: int, options: list):
@@ -106,9 +108,11 @@ def get_quiz_keyboard(word_id: int, options: list):
 def get_stats_keyboard():
     keyboard = [
         [InlineKeyboardButton(text="📖 Мои выученные слова", callback_data="my_learned_words")],
+        [InlineKeyboardButton(text="📥 Скачать выученные слова (PDF)", callback_data="download_learned_pdf")],
         [InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_back_to_stats_keyboard():
     keyboard = [

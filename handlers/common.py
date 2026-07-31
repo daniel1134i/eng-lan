@@ -1,6 +1,8 @@
+import os
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
+
 from database.models import get_or_create_user, get_user_stats, update_user_activity, get_user_reminder_hour, set_user_reminder_hour, get_categories_stats, get_user_selected_category, set_user_selected_category, get_user_learned_words_list, get_user_activity_calendar
 from keyboards.inline import get_main_menu_keyboard, get_back_to_menu_keyboard, get_reminder_settings_keyboard, get_categories_keyboard, get_stats_keyboard, get_back_to_stats_keyboard
 
@@ -208,6 +210,38 @@ async def cb_my_learned_words(call: CallbackQuery):
     )
     await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_stats_keyboard())
     await call.answer()
+
+@router.callback_query(F.data == "download_learned_pdf")
+async def cb_download_learned_pdf(call: CallbackQuery):
+    user_id = call.from_user.id
+    first_name = call.from_user.first_name
+    learned_words = await get_user_learned_words_list(user_id)
+
+    if not learned_words:
+        await call.answer("У вас пока нет выученных слов для скачивания!", show_alert=True)
+        return
+
+    await call.answer("⏳ Генерируем красивый PDF документ...")
+    import tempfile
+    from aiogram.types import FSInputFile
+    from services.pdf_generator import generate_learned_words_pdf
+
+    temp_pdf_path = os.path.join(tempfile.gettempdir(), f"learned_words_{user_id}.pdf")
+    generate_learned_words_pdf(first_name, learned_words, temp_pdf_path)
+
+    pdf_file = FSInputFile(temp_pdf_path, filename=f"My_English_Vocabulary_{first_name}.pdf")
+
+    caption = (
+        f"📑 <b>Ваш личный словарь готовых слов!</b>\n\n"
+        f"👤 Ученик: <b>{first_name}</b>\n"
+        f"✅ Выучено слов: <b>{len(learned_words)}</b>\n\n"
+        f"Файл отлично подходит для распечатки или повторения offline! 🎓"
+    )
+    await call.message.answer_document(document=pdf_file, caption=caption, parse_mode="HTML")
+
+    if os.path.exists(temp_pdf_path):
+        os.remove(temp_pdf_path)
+
 
 
 @router.callback_query(F.data == "help_info")
