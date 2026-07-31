@@ -57,15 +57,12 @@ async def cmd_update_bot(message: Message):
         parse_mode="HTML"
     )
     import subprocess
-    import shutil
     import sys
 
-    git_path = shutil.which("git") or "/usr/bin/git"
-    python_path = sys.executable or "python3"
-
     try:
-        # Выполняем git pull по абсолютному пути
-        git_result = subprocess.run([git_path, "pull", "origin", "main"], capture_output=True, text=True, cwd=os.getcwd())
+        env = os.environ.copy()
+        # Выполняем git pull через встроенный оболочку shell
+        git_result = subprocess.run("git pull origin main", shell=True, capture_output=True, text=True, cwd=os.getcwd(), env=env)
         output_text = git_result.stdout.strip() if git_result.stdout else git_result.stderr.strip()
 
         await status_msg.edit_text(
@@ -75,8 +72,8 @@ async def cmd_update_bot(message: Message):
             parse_mode="HTML"
         )
 
-        # Пересобираем базу слов
-        seed_result = subprocess.run([python_path, "seed_words.py"], capture_output=True, text=True, cwd=os.getcwd())
+        python_exec = sys.executable or "python3"
+        seed_result = subprocess.run(f"{python_exec} seed_words.py", shell=True, capture_output=True, text=True, cwd=os.getcwd(), env=env)
         seed_text = seed_result.stdout.strip() if seed_result.stdout else "База данных актуальна."
 
         res_text = (
@@ -90,6 +87,7 @@ async def cmd_update_bot(message: Message):
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     except Exception as e:
         await status_msg.edit_text(f"❌ <b>Произошла ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
 
 
 
