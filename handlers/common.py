@@ -2,7 +2,7 @@ import os
 import aiosqlite
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 
 
 from database.models import get_or_create_user, get_user_stats, update_user_activity, get_user_reminder_hour, set_user_reminder_hour, get_categories_stats, get_user_selected_category, set_user_selected_category, get_user_learned_words_list, get_user_activity_calendar
@@ -49,8 +49,34 @@ def make_progress_bar(percentage: float, length: int = 10) -> str:
     bar = '█' * filled_length + '░' * (length - filled_length)
     return bar
 
+@router.message(Command("update_bot"))
+async def cmd_update_bot(message: Message):
+    status_msg = await message.answer("⏳ <b>Запуск авто-обновления бота с GitHub...</b>\n<i>Выполняется git pull...</i>", parse_mode="HTML")
+    import subprocess
+    try:
+        # Выполняем git pull для стягивания обновлений с GitHub
+        git_result = subprocess.run(["git", "pull", "origin", "main"], capture_output=True, text=True, cwd=os.getcwd())
+        output_text = git_result.stdout if git_result.stdout else git_result.stderr
+
+        # Пересобираем базу если обновился seed_words.py
+        seed_result = subprocess.run(["python3", "seed_words.py"], capture_output=True, text=True, cwd=os.getcwd())
+
+        res_text = (
+            f"✅ <b>Обновление с GitHub успешно завершено!</b>\n\n"
+            f"📦 <b>Лог Git Pull:</b>\n"
+            f"<code>{output_text.strip()}</code>\n\n"
+            f"🌱 <b>Лог Базы данных:</b>\n"
+            f"<code>{seed_result.stdout.strip()}</code>\n\n"
+            f"🔄 <i>Все файлы обновились!</i>"
+        )
+        await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+    except Exception as e:
+        await status_msg.edit_text(f"❌ <b>Ошибка при обновлении с GitHub:</b>\n<code>{e}</code>", parse_mode="HTML")
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message):
+
     user_id = message.from_user.id
     first_name = message.from_user.first_name
     await get_or_create_user(user_id)
