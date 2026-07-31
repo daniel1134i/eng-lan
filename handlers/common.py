@@ -230,6 +230,34 @@ async def cb_sprint_answer(call: CallbackQuery):
 @router.callback_query(F.data == "mode_movie_quote")
 async def cb_mode_movie_quote(call: CallbackQuery):
     user_id = call.from_user.id
+    import random
+
+    videos_base_dir = os.path.join(os.getcwd(), "assets", "videos")
+    all_local_videos = []
+
+    if os.path.exists(videos_base_dir):
+        for root, dirs, files in os.walk(videos_base_dir):
+            for file in files:
+                if file.lower().endswith(('.mp4', '.mov', '.mkv')):
+                    all_local_videos.append(os.path.join(root, file))
+
+    if all_local_videos:
+        chosen_video_path = random.choice(all_local_videos)
+        series_name = os.path.basename(os.path.dirname(chosen_video_path))
+        raw_name = os.path.splitext(os.path.basename(chosen_video_path))[0]
+
+        caption = (
+            f"🎬 <b>КАДР ИЗ СЕРИАЛА ({series_name})</b>\n\n"
+            f"💬 <b>Фраза / Цитата:</b>\n"
+            f"<i>\"{raw_name}\"</i>"
+        )
+        from aiogram.types import FSInputFile
+        video_file = FSInputFile(chosen_video_path)
+        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+        await call.answer()
+        return
+
+    # Fallback если пока локальных файлов нет
     from database.db import get_db
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
@@ -240,41 +268,15 @@ async def cb_mode_movie_quote(call: CallbackQuery):
         await call.answer("Раздел цитат пополняется...", show_alert=True)
         return
 
-    eng_word = word['english_word'].lower().strip()
-    
-    # Поиск локального видео в папках сериалов
-    videos_base_dir = os.path.join(os.getcwd(), "assets", "videos")
-    found_video_path = None
-
-    if os.path.exists(videos_base_dir):
-        for root, dirs, files in os.walk(videos_base_dir):
-            for file in files:
-                if file.lower().endswith(('.mp4', '.mov', '.mkv')):
-                    file_name_no_ext = os.path.splitext(file)[0].lower().strip()
-                    if eng_word in file_name_no_ext or file_name_no_ext in eng_word:
-                        found_video_path = os.path.join(root, file)
-                        break
-            if found_video_path:
-                break
-
-    # Имя сериала из пути пачки
-    series_name = ""
-    if found_video_path:
-        series_name = os.path.basename(os.path.dirname(found_video_path))
-
     caption = (
-        f"🎬 <b>КАДР ИЗ СЕРИАЛА</b> {f'({series_name})' if series_name else ''}\n\n"
+        f"🎬 <b>КАДР ИЗ СЕРИАЛА</b>\n\n"
         f"🔤 Слово / Фраза: <b>{word['english_word'].capitalize()}</b>\n"
         f"🇷🇺 Перевод: <b>{word['translation']}</b>\n\n"
         f"💬 <b>Реплика героя:</b>\n"
         f"{word['example_sentence']}"
     )
 
-    if found_video_path and os.path.exists(found_video_path):
-        from aiogram.types import FSInputFile
-        video_file = FSInputFile(found_video_path)
-        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
-    elif word['video_url']:
+    if word['video_url']:
         from aiogram.types import URLInputFile
         video_file = URLInputFile(word['video_url'])
         await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
@@ -282,6 +284,7 @@ async def cb_mode_movie_quote(call: CallbackQuery):
         await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
 
     await call.answer()
+
 
 
 
