@@ -251,9 +251,10 @@ async def cb_mode_movie_quote(call: CallbackQuery):
     if word['video_url']:
         from aiogram.types import URLInputFile
         video_file = URLInputFile(word['video_url'])
-        await call.message.answer_animation(animation=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+        await call.message.answer_video(video=video_file, caption=caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
     else:
         await call.message.edit_text(caption, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+
 
     await call.answer()
 
