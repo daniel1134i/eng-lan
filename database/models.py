@@ -109,7 +109,7 @@ async def get_user_stats(telegram_id: int):
         # Всего слов в системе
         async with db.execute("SELECT COUNT(*) as cnt FROM words") as cursor:
             total_words_row = await cursor.fetchone()
-            total_words = total_words_row['cnt'] if total_words_row else 1025
+            total_words = total_words_row['cnt'] if total_words_row else 1250
 
         # Выученные слова пользователя
         async with db.execute(

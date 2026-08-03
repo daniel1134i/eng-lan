@@ -36,7 +36,7 @@ def get_categories_keyboard(categories: list, selected_category: str = "all"):
 
     keyboard = []
     
-    all_label = "✅ 🌐 Все слова (1025)" if selected_category == "all" else "🌐 Все слова (1025)"
+    all_label = "✅ 🌐 Все слова (1250)" if selected_category == "all" else "🌐 Все слова (1250)"
     keyboard.append([InlineKeyboardButton(text=all_label, callback_data="set_category_all")])
 
     for cat in categories:
