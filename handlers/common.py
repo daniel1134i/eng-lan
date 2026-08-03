@@ -898,6 +898,7 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
             {"english_word": "earth", "translation": "земля"},
             {"english_word": "friend", "translation": "друг"}
         ]
+        random.shuffle(all_words)
 
     target = all_words[0]
     eng = target['english_word']
