@@ -769,130 +769,173 @@ async def cb_builder_pick(call: CallbackQuery):
         await call.answer("Сессия истекла. Нажмите 'Следующая фраза'.", show_alert=True)
         return
 
-    word = session['pool_words'][idx]
-    if word is not None:
-        session['selected_words'].append(word)
-        session['pool_words'][idx] = None
-
-    from keyboards.inline import get_builder_keyboard
-    text = (
-        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
-        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
-        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
-        f"<b>Ваша сборка:</b> {' '.join(session['selected_words'])}\n\n"
-        f"<i>Нажимайте блоки ниже, чтобы добавить слова:</i>"
-    )
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard(session['selected_words'], session['pool_words'], session_id))
-    await call.answer()
+pvp_active_duels = {}
 
 
-@router.callback_query(F.data.startswith("b_pop_"))
-async def cb_builder_pop(call: CallbackQuery):
-    parts = call.data.split("_")
-    idx = int(parts[2])
-    session_id = parts[3]
-
-    session = user_builder_sessions.get(session_id)
-    if not session:
-        await call.answer("Сессия истекла.", show_alert=True)
+async def finish_5min_pvp_duel(bot, duel_id: str):
+    duel = pvp_active_duels.get(duel_id)
+    if not duel or duel.get('finished'):
         return
 
-    removed_word = session['selected_words'].pop(idx)
-    # Возвращаем в свободную ячейку
-    for i, w in enumerate(session['pool_words']):
-        if w is None:
-            session['pool_words'][i] = removed_word
-            break
+    duel['finished'] = True
+    p1 = duel['p1']
+    p2 = duel['p2']
+    s1 = duel['scores'].get(p1['id'], 0)
+    s2 = duel['scores'].get(p2['id'], 0)
 
-    from keyboards.inline import get_builder_keyboard
-    text = (
-        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
-        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
-        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
-        f"<b>Ваша сборка:</b> {' '.join(session['selected_words'])}\n\n"
-        f"<i>Нажимайте блоки ниже, чтобы добавить слова:</i>"
-    )
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard(session['selected_words'], session['pool_words'], session_id))
-    await call.answer()
-
-
-@router.callback_query(F.data.startswith("b_reset_"))
-async def cb_builder_reset(call: CallbackQuery):
-    session_id = call.data.replace("b_reset_", "")
-    session = user_builder_sessions.get(session_id)
-    if not session:
-        await call.answer("Сессия истекла.", show_alert=True)
-        return
-
-    # Восстанавливаем
-    session['pool_words'] = session['original_words'].copy()
-    import random
-    random.shuffle(session['pool_words'])
-    session['selected_words'] = []
-
-    from keyboards.inline import get_builder_keyboard
-    text = (
-        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
-        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
-        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
-        f"<i>Сборка сброшена! Соберите заново:</i>"
-    )
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], session['pool_words'], session_id))
-    await call.answer()
-
-
-@router.callback_query(F.data.startswith("b_check_"))
-async def cb_builder_check(call: CallbackQuery):
-    session_id = call.data.replace("b_check_", "")
-    session = user_builder_sessions.get(session_id)
-    if not session:
-        await call.answer("Сессия истекла.", show_alert=True)
-        return
-
-    user_ans = " ".join(session['selected_words'])
-    target_ans = " ".join(session['original_words'])
-
-    import re
-    clean_user = re.sub(r'[^\w\s]', '', user_ans.lower())
-    clean_target = re.sub(r'[^\w\s]', '', target_ans.lower())
-
-    if clean_user == clean_target:
-        text = (
-            f"🎉 <b>ИДЕАЛЬНО! ФРАЗА СОБРАНА ВЕРНО!</b>\n\n"
-            f"🇬🇧 <b>{target_ans}</b>\n"
-            f"🇷🇺 Перевод: <b>{session['translation']}</b>\n\n"
-            f"⭐ +15 XP за верную сборку!"
-        )
+    if s1 > s2:
+        winner_text = f"🏆 <b>Победитель: {p1['name']}!</b> (+100 XP)"
+    elif s2 > s1:
+        winner_text = f"🏆 <b>Победитель: {p2['name']}!</b> (+100 XP)"
     else:
-        text = (
-            f"💡 <b>ЕСТЬ ОШИБКА В ПОРЯДКЕ СЛОВ</b>\n\n"
-            f"Ваша сборка: <i>{user_ans}</i>\n"
-            f"Правильный вариант: <b>{target_ans}</b>\n\n"
-            f"<i>Попробуйте следующую фразу!</i>"
-        )
+        winner_text = f"🤝 <b>Ничья! Оба игрока набрали поровну!</b> (+50 XP)"
 
-    from keyboards.inline import get_builder_keyboard
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], session['original_words'], session_id))
-    await call.answer()
-
-# Глобальная очередь поиска онлайн-соперников
-pvp_queue = []
-
-@router.callback_query(F.data == "mode_pvp")
-async def cb_mode_pvp(call: CallbackQuery):
-    user_id = call.from_user.id
-    in_queue = user_id in pvp_queue
-    from keyboards.inline import get_pvp_menu_keyboard
-    text = (
-        f"⚔️ <b>PvP ДУЭЛИ И АРЕНА (1v1)</b>\n\n"
-        f"Нажмите кнопку <i>«⚔️ Искать соперника»</i> ниже!\n"
-        f"Бот автоматически подберет другого живого пользователя, который сейчас ищет дуэль.\n\n"
-        f"🏆 <b>Правила дуэли:</b>\n"
-        f"• Обоим игрокам выдается одинаковый набор из 5 случайных слов.\n"
-        f"• Кто наберет больше очков — тот выигрывает дуэль!"
+    final_text = (
+        f"⏱ <b>5 МИНУТ ИСТЕКЛИ! ДУЭЛЬ ЗАВЕРШЕНА!</b>\n\n"
+        f"🔵 <b>{p1['name']}</b>: {s1} правильных слов\n"
+        f"🔴 <b>{p2['name']}</b>: {s2} правильных слов\n\n"
+        f"{winner_text}"
     )
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(in_queue))
-    await call.answer()
+    from keyboards.inline import get_main_menu_keyboard
+    for uid in [p1['id'], p2['id']]:
+        try:
+            await bot.send_message(uid, final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        except Exception:
+            pass
+
+
+async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None):
+    duel = pvp_active_duels.get(duel_id)
+    if not duel or duel.get('finished'):
+        return
+
+    import time
+    time_left = int(max(0, duel['end_time'] - time.time()))
+    mins = time_left // 60
+    secs = time_left % 60
+
+    if time_left <= 0:
+        await finish_5min_pvp_duel(bot, duel_id)
+        return
+
+    # Динамически генерируем вопрос из банка
+    from database.db import get_db
+    import random
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 15") as cursor:
+            all_words = await cursor.fetchall()
+
+    target = all_words[0]
+    eng = target['english_word']
+    correct_tr = target['translation']
+    wrong_pool = [w['translation'] for w in all_words[1:] if w['translation'] != correct_tr]
+    wrong_options = random.sample(wrong_pool, min(3, len(wrong_pool)))
+    options = wrong_options + [correct_tr]
+    random.shuffle(options)
+
+    # Сохраняем вопрос текущему игроку
+    duel['user_questions'][user_id] = {'eng': eng, 'tr': correct_tr, 'options': options}
+
+    user_score = duel['scores'].get(user_id, 0)
+    from keyboards.inline import get_pvp_quiz_keyboard
+    text = (
+        f"⚔️ <b>PvP 5-МИНУТНАЯ ДУЭЛЬ</b>\n"
+        f"⏱ Осталось времени: <b>{mins:02d}:{secs:02d}</b>\n"
+        f"⭐ Ваши баллы: <b>{user_score}</b>\n\n"
+        f"🔤 Переведите слово: <b>{eng.capitalize()}</b>"
+    )
+    if target_message:
+        try:
+            await target_message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, options))
+            return
+        except Exception:
+            pass
+    try:
+        await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, options))
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data == "pvp_search")
+async def cb_pvp_search(call: CallbackQuery):
+    user_id = call.from_user.id
+    user_name = call.from_user.first_name
+
+    if pvp_queue and pvp_queue[0]['id'] != user_id:
+        opponent = pvp_queue.pop(0)
+        import uuid
+        import time
+
+        duel_id = str(uuid.uuid4())[:8]
+        end_time = time.time() + 300 # 5 минут (300 секунд)
+
+        pvp_active_duels[duel_id] = {
+            "p1": opponent,
+            "p2": {"id": user_id, "name": user_name},
+            "scores": {opponent['id']: 0, user_id: 0},
+            "end_time": end_time,
+            "user_questions": {},
+            "finished": False
+        }
+
+        await call.answer("⚔️ Соперник найден! 5-минутный марафон начался!", show_alert=True)
+
+        # Автоматический таймер завершения ровно через 5 минут
+        import asyncio
+        asyncio.create_task(asyncio.sleep(300))
+        asyncio.get_event_loop().call_later(300, lambda: asyncio.create_task(finish_5min_pvp_duel(call.bot, duel_id)))
+
+        # Запускаем Марафон обоим игрокам
+        if 'msg' in opponent:
+            await send_pvp_question(call.bot, opponent['id'], duel_id, 0, target_message=opponent['msg'])
+        else:
+            await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
+
+        await send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message)
+
+    else:
+        if user_id not in [u['id'] for u in pvp_queue]:
+            pvp_queue.append({'id': user_id, 'name': user_name, 'msg': call.message})
+
+        from keyboards.inline import get_pvp_menu_keyboard
+        await call.message.edit_text(
+            f"🔍 <b>ПОИСК СОПЕРНИКА НА 5-МИНУТНУЮ ДУЭЛЬ...</b>\n\n"
+            f"Вы добавлены в очередь. Ожидайте соперника!\n"
+            f"<i>(Победит тот, кто угадает больше слов за 5 минут)</i>",
+            parse_mode="HTML",
+            reply_markup=get_pvp_menu_keyboard(in_queue=True)
+        )
+        await call.answer("Вы встали в очередь поиска!")
+
+
+@router.callback_query(F.data.startswith("pvp_ans_"))
+async def cb_pvp_ans(call: CallbackQuery):
+    parts = call.data.split("_")
+    duel_id = parts[2]
+    q_index = int(parts[3])
+    opt_idx = int(parts[4])
+    user_id = call.from_user.id
+
+    duel = pvp_active_duels.get(duel_id)
+    if not duel or duel.get('finished'):
+        await call.answer("⏱ Дуэль завершена!", show_alert=True)
+        return
+
+    user_q = duel['user_questions'].get(user_id)
+    if not user_q:
+        await send_pvp_question(call.bot, user_id, duel_id, q_index + 1)
+        return
+
+    chosen_opt = user_q['options'][opt_idx]
+    if chosen_opt == user_q['tr']:
+        duel['scores'][user_id] = duel['scores'].get(user_id, 0) + 1
+        await call.answer("✅ ВЕРНО! (+1 балл)", show_alert=True)
+    else:
+        await call.answer(f"❌ НЕВЕРНО! ({user_q['tr']})", show_alert=True)
+
+    await send_pvp_question(call.bot, user_id, duel_id, q_index + 1, target_message=call.message)
+
 
 
 pvp_active_duels = {}
