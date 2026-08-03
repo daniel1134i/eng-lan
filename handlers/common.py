@@ -882,28 +882,37 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
         await finish_5min_pvp_duel(bot, duel_id)
         return
 
-    from database.db import get_db
-    import random
-    async with get_db() as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 15") as cursor:
-            all_words = await cursor.fetchall()
+    if 'questions_pool' not in duel:
+        from database.db import get_db
+        import random
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 300") as cursor:
+                all_words = await cursor.fetchall()
+                
+        if not all_words or len(all_words) < 4:
+            all_words = [
+                {"english_word": "apple", "translation": "яблоко"},
+                {"english_word": "sun", "translation": "солнце"},
+                {"english_word": "water", "translation": "вода"},
+                {"english_word": "fire", "translation": "огонь"},
+                {"english_word": "earth", "translation": "земля"},
+                {"english_word": "friend", "translation": "друг"}
+            ]
+            all_words = all_words * 50 # размножаем для пула
             
-    if not all_words or len(all_words) < 4:
-        all_words = [
-            {"english_word": "apple", "translation": "яблоко"},
-            {"english_word": "sun", "translation": "солнце"},
-            {"english_word": "water", "translation": "вода"},
-            {"english_word": "fire", "translation": "огонь"},
-            {"english_word": "earth", "translation": "земля"},
-            {"english_word": "friend", "translation": "друг"}
-        ]
+        all_words = list(all_words)
         random.shuffle(all_words)
+        duel['questions_pool'] = all_words
 
-    target = all_words[0]
+    pool = duel['questions_pool']
+    target = pool[q_index % len(pool)]
+    
     eng = target['english_word']
     correct_tr = target['translation']
-    wrong_pool = [w['translation'] for w in all_words[1:] if w['translation'] != correct_tr]
+    wrong_pool = list(set([w['translation'] for w in pool if w['translation'] != correct_tr]))
+    
+    import random
     wrong_options = random.sample(wrong_pool, min(3, len(wrong_pool)))
     options = wrong_options + [correct_tr]
     random.shuffle(options)
