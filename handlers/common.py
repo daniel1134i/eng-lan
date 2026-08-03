@@ -770,9 +770,28 @@ async def cb_builder_pick(call: CallbackQuery):
     session = user_builder_sessions.get(session_id)
     if not session:
         await call.answer("Сессия истекла. Нажмите 'Следующая фраза'.", show_alert=True)
-        return
+@router.callback_query(F.data == "mode_pvp")
+async def cb_mode_pvp(call: CallbackQuery):
+    user_id = call.from_user.id
+    in_queue = user_id in pvp_queue
+    from keyboards.inline import get_pvp_menu_keyboard
+    text = (
+        f"⚔️ <b>PvP ДУЭЛИ И АРЕНА (1v1)</b>\n\n"
+        f"Нажимайте кнопку <i>«⚔️ Искать соперника»</i> ниже!\n"
+        f"Бот подберет второго игрока и запустит 5-минутный нон-стоп марафон на угадывание слов.\n\n"
+        f"🏆 <b>Правила:</b>\n"
+        f"• У вас есть 5 минут.\n"
+        f"• Кто наберет больше баллов — побеждает в дуэли!"
+    )
+    try:
+        await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(in_queue))
+    except Exception:
+        await call.message.answer(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(in_queue))
+    await call.answer()
+
 
 pvp_active_duels = {}
+
 
 
 async def finish_5min_pvp_duel(bot, duel_id: str):
