@@ -77,7 +77,8 @@ async def run_update_task(status_msg: Message):
             cwd=os.getcwd()
         )
         stdout_seed, _ = await proc_seed.communicate()
-        seed_text = stdout_seed.decode().strip() if stdout_seed else "База данных актуальна."
+        from database.db import init_db
+        await init_db()
 
         res_text = (
             f"🎉 <b>ОБНОВЛЕНИЕ БОТА УСПЕШНО ЗАВЕРШЕНО!</b>\n\n"
@@ -85,11 +86,12 @@ async def run_update_task(status_msg: Message):
             f"<code>{output_text}</code>\n\n"
             f"🔤 <b>Статус Синхронизации БД:</b>\n"
             f"<code>{seed_text}</code>\n\n"
-            f"✨ <i>Все свежие доработки применены! Перезапустите бота.</i>"
+            f"✨ <i>Код подтянут и база обновлена! Нажмите /start для обновления Главного меню.</i>"
         )
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     except Exception as e:
         await status_msg.edit_text(f"❌ <b>Ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
 
 @router.message(Command("update_bot"))
 async def cmd_update_bot(message: Message):
