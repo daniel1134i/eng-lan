@@ -892,12 +892,12 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
                 
         if not all_words or len(all_words) < 4:
             all_words = [
-                {"english_word": "apple", "translation": "яблоко"},
-                {"english_word": "sun", "translation": "солнце"},
-                {"english_word": "water", "translation": "вода"},
-                {"english_word": "fire", "translation": "огонь"},
-                {"english_word": "earth", "translation": "земля"},
-                {"english_word": "friend", "translation": "друг"}
+                {"english_word": "challenge", "translation": "вызов (испытание)"},
+                {"english_word": "opportunity", "translation": "возможность"},
+                {"english_word": "experience", "translation": "опыт"},
+                {"english_word": "development", "translation": "развитие"},
+                {"english_word": "knowledge", "translation": "знание"},
+                {"english_word": "environment", "translation": "окружающая среда"}
             ]
             all_words = all_words * 50 # размножаем для пула
             
