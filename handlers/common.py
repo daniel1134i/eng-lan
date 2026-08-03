@@ -54,20 +54,18 @@ async def run_update_task(status_msg: Message):
     import sys
     import shutil
     try:
-        # Проверяем возможные пути размещения git на сервере
-        git_bin = shutil.which("git") or "/usr/bin/git" or "/usr/local/bin/git" or "git"
-        proc_git = await asyncio.create_subprocess_shell(
-            "git pull origin main",
+        git_bin = shutil.which("git") or "git"
+        python_bin = sys.executable or "python3"
+
+        # Запуск git pull с получением точного бинарника
+        proc_git = await asyncio.create_subprocess_exec(
+            git_bin, "pull", "origin", "main",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.getcwd(),
-            env=os.environ.copy()
+            cwd=os.getcwd()
         )
         stdout_git, stderr_git = await proc_git.communicate()
-        output_text = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
-
-
-
+        git_output = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
 
         await status_msg.edit_text(
             "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА</b>\n\n"
@@ -76,30 +74,30 @@ async def run_update_task(status_msg: Message):
             parse_mode="HTML"
         )
 
-        python_exec = sys.executable or "python3"
-        proc_seed = await asyncio.create_subprocess_shell(
-            f"{python_exec} seed_words.py",
+        proc_seed = await asyncio.create_subprocess_exec(
+            python_bin, "seed_words.py",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=os.getcwd()
         )
-        stdout_seed, _ = await proc_seed.communicate()
-        seed_text = stdout_seed.decode().strip() if stdout_seed else "База данных слов успешно обновлена!"
+        stdout_seed, stderr_seed = await proc_seed.communicate()
+        seed_output = stdout_seed.decode().strip() if stdout_seed else stderr_seed.decode().strip()
+
         from database.db import init_db
         await init_db()
-
 
         res_text = (
             f"🎉 <b>ОБНОВЛЕНИЕ БОТА УСПЕШНО ЗАВЕРШЕНО!</b>\n\n"
             f"📥 <b>Статус Git Pull:</b>\n"
-            f"<code>{output_text}</code>\n\n"
+            f"<code>{git_output if git_output else 'Already up to date.'}</code>\n\n"
             f"🔤 <b>Статус Синхронизации БД:</b>\n"
-            f"<code>{seed_text}</code>\n\n"
-            f"✨ <i>Код подтянут и база обновлена! Нажмите /start для обновления Главного меню.</i>"
+            f"<code>{seed_output if seed_output else 'База словаря обновлена.'}</code>\n\n"
+            f"✨ <i>Все свежие доработки применены! Отправьте /start для перезагрузки меню.</i>"
         )
         await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     except Exception as e:
         await status_msg.edit_text(f"❌ <b>Ошибка при авто-обновлении:</b>\n<code>{e}</code>", parse_mode="HTML")
+
 
 
 @router.message(Command("update_bot"))
