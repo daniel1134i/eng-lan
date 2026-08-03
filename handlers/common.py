@@ -109,11 +109,39 @@ async def cmd_update_bot(message: Message):
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-
     user_id = message.from_user.id
     first_name = message.from_user.first_name
     await get_or_create_user(user_id)
-    
+
+    # Проверка на принятие PvP дуэли через реферальную ссылку /start duel_XXXXX
+    args = message.text.split()
+    if len(args) > 1 and args[1].startswith("duel_"):
+        duel_id = args[1].replace("duel_", "")
+        from database.db import get_db
+        import json
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM duels WHERE duel_id = ?", (duel_id,)) as cursor:
+                duel = await cursor.fetchone()
+
+        if duel:
+            if duel['creator_id'] == user_id:
+                await message.answer("⚠️ Вы не можете принять дуэль сами у себя! Отправьте ссылку другу.", reply_markup=get_main_menu_keyboard())
+                return
+
+            words = json.loads(duel['words_json'])
+            words_list_str = "\n".join([f"• <b>{w['eng'].capitalize()}</b> — {w['tr']}" for w in words])
+
+            duel_text = (
+                f"⚔️ <b>ВЫ ВЫЗВАНЫ НА PvP ДУЭЛЬ!</b>\n\n"
+                f"Соперник: <b>{duel['creator_name']}</b>\n\n"
+                f"📋 <b>Слова для вашей дуэли (запомните их!):</b>\n"
+                f"{words_list_str}\n\n"
+                f"🔥 <i>Приготовьтесь! Оба участника получают одинаковые 5 вопросов. Удачи!</i>"
+            )
+            await message.answer(duel_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+            return
+
     welcome_text = (
         f"👋 <b>Привет, {first_name}!</b>\n\n"
         f"Добро пожаловать в тренажер <b>1025 самых популярных английских слов</b>!\n\n"
@@ -123,6 +151,7 @@ async def cmd_start(message: Message):
         f"Выбери режим обучения ниже, чтобы начать! 👇"
     )
     await message.answer(welcome_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+
 
 @router.callback_query(F.data == "main_menu")
 async def cb_main_menu(call: CallbackQuery):
@@ -667,6 +696,231 @@ async def cb_download_learned_pdf(call: CallbackQuery):
 
 
 
+# ----------------- 🧱 РЕЖИМ КОНСТРУКТОР ФРАЗ (SENTENCE BUILDER) -----------------
+user_builder_sessions = {}
+
+@router.callback_query(F.data == "mode_builder")
+async def cb_mode_builder(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.db import get_db
+    import random
+    import uuid
+
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM words WHERE example_sentence IS NOT NULL AND example_sentence != '' ORDER BY RANDOM() LIMIT 1") as cursor:
+            row = await cursor.fetchone()
+
+    if not row or not row['example_sentence']:
+        await call.answer("Раздел предложений пополняется...", show_alert=True)
+        return
+
+    # Берем оригинальный пример предложения
+    orig_sentence = row['example_sentence'].strip()
+    import re
+    # Разбиваем на слова
+    clean_words = re.findall(r"[\w']+|[^\s\w]", orig_sentence)
+    
+    # Пул слов
+    pool_words = clean_words.copy()
+    random.shuffle(pool_words)
+
+    session_id = str(uuid.uuid4())[:8]
+    user_builder_sessions[session_id] = {
+        "user_id": user_id,
+        "original_words": clean_words,
+        "pool_words": pool_words,
+        "selected_words": [],
+        "translation": row['translation'],
+        "word": row['english_word']
+    }
+
+    from keyboards.inline import get_builder_keyboard
+    text = (
+        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
+        f"🇷🇺 Перевод: <b>{row['translation']}</b>\n"
+        f"🔤 Ключевое слово: <b>{row['english_word'].capitalize()}</b>\n\n"
+        f"<b>Соберите предложение на английском, нажимая на блоки ниже:</b>"
+    )
+
+    try:
+        await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], pool_words, session_id))
+    except Exception:
+        await call.message.answer(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], pool_words, session_id))
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("b_pick_"))
+async def cb_builder_pick(call: CallbackQuery):
+    parts = call.data.split("_")
+    idx = int(parts[2])
+    session_id = parts[3]
+
+    session = user_builder_sessions.get(session_id)
+    if not session:
+        await call.answer("Сессия истекла. Нажмите 'Следующая фраза'.", show_alert=True)
+        return
+
+    word = session['pool_words'][idx]
+    if word is not None:
+        session['selected_words'].append(word)
+        session['pool_words'][idx] = None
+
+    from keyboards.inline import get_builder_keyboard
+    text = (
+        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
+        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
+        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
+        f"<b>Ваша сборка:</b> {' '.join(session['selected_words'])}\n\n"
+        f"<i>Нажимайте блоки ниже, чтобы добавить слова:</i>"
+    )
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard(session['selected_words'], session['pool_words'], session_id))
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("b_pop_"))
+async def cb_builder_pop(call: CallbackQuery):
+    parts = call.data.split("_")
+    idx = int(parts[2])
+    session_id = parts[3]
+
+    session = user_builder_sessions.get(session_id)
+    if not session:
+        await call.answer("Сессия истекла.", show_alert=True)
+        return
+
+    removed_word = session['selected_words'].pop(idx)
+    # Возвращаем в свободную ячейку
+    for i, w in enumerate(session['pool_words']):
+        if w is None:
+            session['pool_words'][i] = removed_word
+            break
+
+    from keyboards.inline import get_builder_keyboard
+    text = (
+        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
+        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
+        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
+        f"<b>Ваша сборка:</b> {' '.join(session['selected_words'])}\n\n"
+        f"<i>Нажимайте блоки ниже, чтобы добавить слова:</i>"
+    )
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard(session['selected_words'], session['pool_words'], session_id))
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("b_reset_"))
+async def cb_builder_reset(call: CallbackQuery):
+    session_id = call.data.replace("b_reset_", "")
+    session = user_builder_sessions.get(session_id)
+    if not session:
+        await call.answer("Сессия истекла.", show_alert=True)
+        return
+
+    # Восстанавливаем
+    session['pool_words'] = session['original_words'].copy()
+    import random
+    random.shuffle(session['pool_words'])
+    session['selected_words'] = []
+
+    from keyboards.inline import get_builder_keyboard
+    text = (
+        f"🧱 <b>КОНСТРУКТОР ФРАЗ</b>\n\n"
+        f"🇷🇺 Перевод: <b>{session['translation']}</b>\n"
+        f"🔤 Ключевое слово: <b>{session['word'].capitalize()}</b>\n\n"
+        f"<i>Сборка сброшена! Соберите заново:</i>"
+    )
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], session['pool_words'], session_id))
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("b_check_"))
+async def cb_builder_check(call: CallbackQuery):
+    session_id = call.data.replace("b_check_", "")
+    session = user_builder_sessions.get(session_id)
+    if not session:
+        await call.answer("Сессия истекла.", show_alert=True)
+        return
+
+    user_ans = " ".join(session['selected_words'])
+    target_ans = " ".join(session['original_words'])
+
+    import re
+    clean_user = re.sub(r'[^\w\s]', '', user_ans.lower())
+    clean_target = re.sub(r'[^\w\s]', '', target_ans.lower())
+
+    if clean_user == clean_target:
+        text = (
+            f"🎉 <b>ИДЕАЛЬНО! ФРАЗА СОБРАНА ВЕРНО!</b>\n\n"
+            f"🇬🇧 <b>{target_ans}</b>\n"
+            f"🇷🇺 Перевод: <b>{session['translation']}</b>\n\n"
+            f"⭐ +15 XP за верную сборку!"
+        )
+    else:
+        text = (
+            f"💡 <b>ЕСТЬ ОШИБКА В ПОРЯДКЕ СЛОВ</b>\n\n"
+            f"Ваша сборка: <i>{user_ans}</i>\n"
+            f"Правильный вариант: <b>{target_ans}</b>\n\n"
+            f"<i>Попробуйте следующую фразу!</i>"
+        )
+
+    from keyboards.inline import get_builder_keyboard
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], session['original_words'], session_id))
+    await call.answer()
+
+# ----------------- ⚔️ РЕЖИМ PVP ДУЭЛИ 1v1 -----------------
+@router.callback_query(F.data == "mode_pvp")
+async def cb_mode_pvp(call: CallbackQuery):
+    bot_obj = call.bot
+    bot_info = await bot_obj.get_me()
+    bot_username = bot_info.username
+
+    from keyboards.inline import get_pvp_menu_keyboard
+    text = (
+        f"⚔️ <b>PvP ДУЭЛИ С ДРУЗЬЯМИ (1v1)</b>\n\n"
+        f"Вызовите любого друга на интерактивную викторину из 5 случайных слов!\n\n"
+        f"🏆 <b>Правила:</b>\n"
+        f"• Кто даст больше правильных ответов — тот побеждает!\n"
+        f"• Бот автоматически подсчитает очки и объявит победителя прямо в чате."
+    )
+    await call.message.answer(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(bot_username))
+    await call.answer()
+
+
+@router.callback_query(F.data == "pvp_create")
+async def cb_pvp_create(call: CallbackQuery):
+    user_id = call.from_user.id
+    user_name = call.from_user.first_name
+
+    import uuid
+    import json
+    duel_id = str(uuid.uuid4())[:8]
+
+    # Берем 5 случайных слов для дуэли
+    from database.db import get_db
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT word_id, english_word, translation FROM words ORDER BY RANDOM() LIMIT 5") as cursor:
+            words = await cursor.fetchall()
+            words_data = [{"id": w['word_id'], "eng": w['english_word'], "tr": w['translation']} for w in words]
+
+        await db.execute("""
+            INSERT INTO duels (duel_id, creator_id, creator_name, words_json, status)
+            VALUES (?, ?, ?, ?, 'pending')
+        """, (duel_id, user_id, user_name, json.dumps(words_data)))
+        await db.commit()
+
+    bot_info = await call.bot.get_me()
+    invite_link = f"https://t.me/{bot_info.username}?start=duel_{duel_id}"
+
+    text = (
+        f"⚔️ <b>ДУЭЛЬ СОЗДАНА!</b>\n\n"
+        f"👤 Создатель: <b>{user_name}</b>\n"
+        f"🔗 <b>Ссылка для вызова соперника:</b>\n"
+        f"<code>{invite_link}</code>\n\n"
+        f"💬 Перешлите эту ссылку другу в ЛС или в ваш групповой чат!\n"
+        f"Как только друг перейдет по ней, дуэль начнется!"
+    )
+    await call.message.answer(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
 @router.callback_query(F.data == "help_info")
 async def cb_help(call: CallbackQuery):
     help_text = (
@@ -679,4 +933,5 @@ async def cb_help(call: CallbackQuery):
     )
     await call.message.edit_text(help_text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
     await call.answer()
+
 

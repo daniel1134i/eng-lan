@@ -97,11 +97,21 @@ async def init_db():
         except Exception:
             pass
             
-        try:
-            await db.execute("ALTER TABLE user_words ADD COLUMN interval INTEGER DEFAULT 0")
-            await db.execute("ALTER TABLE user_words ADD COLUMN repetition_count INTEGER DEFAULT 0")
-            await db.execute("ALTER TABLE user_words ADD COLUMN ease_factor REAL DEFAULT 2.5")
-        except Exception:
-            pass
+        # Таблица PvP дуэлей
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS duels (
+                duel_id TEXT PRIMARY KEY,
+                creator_id INTEGER NOT NULL,
+                creator_name TEXT,
+                opponent_id INTEGER DEFAULT NULL,
+                opponent_name TEXT DEFAULT NULL,
+                words_json TEXT NOT NULL,
+                creator_score INTEGER DEFAULT 0,
+                opponent_score INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'pending', -- 'pending', 'active', 'finished'
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         await db.commit()
+

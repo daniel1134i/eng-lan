@@ -11,6 +11,10 @@ def get_main_menu_keyboard():
             InlineKeyboardButton(text="🎬 Кадр из сериала", callback_data="mode_movie_quote")
         ],
         [
+            InlineKeyboardButton(text="🧱 Конструктор фраз", callback_data="mode_builder"),
+            InlineKeyboardButton(text="⚔️ PvP Дуэль 1v1", callback_data="mode_pvp")
+        ],
+        [
             InlineKeyboardButton(text="📚 Темы слов", callback_data="categories_menu"),
             InlineKeyboardButton(text="➕ Добавить слово", callback_data="add_custom_word")
         ],
@@ -23,6 +27,7 @@ def get_main_menu_keyboard():
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 
 
@@ -180,4 +185,47 @@ def get_back_to_menu_keyboard():
         [InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_builder_keyboard(selected_words: list, pool_words: list, sentence_id: str):
+    keyboard = []
+    # Ряд 1: Текущие выбранные слова (если есть)
+    if selected_words:
+        row_sel = [InlineKeyboardButton(text=f"❌ {w}", callback_data=f"b_pop_{i}_{sentence_id}") for i, w in enumerate(selected_words)]
+        # Разбиваем на строки по 4 кнопки если много
+        for i in range(0, len(row_sel), 4):
+            keyboard.append(row_sel[i:i+4])
+
+    # Ряд 2: Доступные слова из пула
+    row_pool = []
+    for i, w in enumerate(pool_words):
+        if w is not None:
+            row_pool.append(InlineKeyboardButton(text=w, callback_data=f"b_pick_{i}_{sentence_id}"))
+
+    for i in range(0, len(row_pool), 4):
+        keyboard.append(row_pool[i:i+4])
+
+    # Управление
+    keyboard.append([
+        InlineKeyboardButton(text="🚀 Проверить ответ", callback_data=f"b_check_{sentence_id}"),
+        InlineKeyboardButton(text="🔄 Сброс", callback_data=f"b_reset_{sentence_id}")
+    ])
+    keyboard.append([
+        InlineKeyboardButton(text="➡️ Следующая фраза", callback_data="mode_builder"),
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_pvp_menu_keyboard(bot_username: str):
+    keyboard = [
+        [
+            InlineKeyboardButton(text="⚔️ Создать новую дуэль", callback_data="pvp_create")
+        ],
+        [
+            InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
