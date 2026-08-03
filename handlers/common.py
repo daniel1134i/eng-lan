@@ -54,7 +54,14 @@ async def run_update_task(status_msg: Message):
     import sys
     import shutil
     try:
-        git_bin = shutil.which("git") or "git"
+        git_bin = shutil.which("git")
+        if not git_bin:
+            for p in ["/usr/bin/git", "/usr/local/bin/git", "/opt/homebrew/bin/git"]:
+                if os.path.exists(p):
+                    git_bin = p
+                    break
+        git_bin = git_bin or "git"
+
         python_bin = sys.executable or "python3"
 
         # Запуск git pull с получением точного бинарника
@@ -66,6 +73,7 @@ async def run_update_task(status_msg: Message):
         )
         stdout_git, stderr_git = await proc_git.communicate()
         git_output = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
+
 
         await status_msg.edit_text(
             "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА</b>\n\n"
