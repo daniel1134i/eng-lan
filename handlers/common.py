@@ -80,8 +80,10 @@ async def run_update_task(status_msg: Message):
             cwd=os.getcwd()
         )
         stdout_seed, _ = await proc_seed.communicate()
+        seed_text = stdout_seed.decode().strip() if stdout_seed else "База данных слов успешно обновлена!"
         from database.db import init_db
         await init_db()
+
 
         res_text = (
             f"🎉 <b>ОБНОВЛЕНИЕ БОТА УСПЕШНО ЗАВЕРШЕНО!</b>\n\n"
