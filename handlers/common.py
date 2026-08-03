@@ -897,7 +897,7 @@ async def cb_mode_pvp(call: CallbackQuery):
 
 pvp_active_duels = {}
 
-async def send_pvp_question(bot, user_id, duel_id, q_index):
+async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None):
     duel = pvp_active_duels.get(duel_id)
     if not duel:
         return
@@ -923,6 +923,12 @@ async def send_pvp_question(bot, user_id, duel_id, q_index):
             f"{winner_text}"
         )
         from keyboards.inline import get_main_menu_keyboard
+        if target_message:
+            try:
+                await target_message.edit_text(final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+                return
+            except Exception:
+                pass
         try:
             await bot.send_message(user_id, final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
         except Exception:
@@ -935,6 +941,12 @@ async def send_pvp_question(bot, user_id, duel_id, q_index):
         f"⚔️ <b>PvP ДУЭЛЬ — ВОПРОС {q_index + 1} / 5</b>\n\n"
         f"🔤 Как переводится слово: <b>{q_data['eng'].capitalize()}</b>?"
     )
+    if target_message:
+        try:
+            await target_message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, q_data['options']))
+            return
+        except Exception:
+            pass
     try:
         await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, q_data['options']))
     except Exception:
@@ -978,14 +990,18 @@ async def cb_pvp_search(call: CallbackQuery):
             "scores": {opponent['id']: 0, user_id: 0}
         }
 
-        await call.answer("⚔️ Соперник найден! Дуэль началась!", show_alert=True)
-        # Запускаем Вопрос 1 для обоих
-        await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
-        await send_pvp_question(call.bot, user_id, duel_id, 0)
+        await call.answer("⚔️ Соперник найден! Погнали!", show_alert=True)
+        # Отправляем 1-й вопрос обоим
+        if 'msg' in opponent:
+            await send_pvp_question(call.bot, opponent['id'], duel_id, 0, target_message=opponent['msg'])
+        else:
+            await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
+
+        await send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message)
 
     else:
         if user_id not in [u['id'] for u in pvp_queue]:
-            pvp_queue.append({'id': user_id, 'name': user_name})
+            pvp_queue.append({'id': user_id, 'name': user_name, 'msg': call.message})
 
         from keyboards.inline import get_pvp_menu_keyboard
         await call.message.edit_text(
@@ -996,6 +1012,7 @@ async def cb_pvp_search(call: CallbackQuery):
             reply_markup=get_pvp_menu_keyboard(in_queue=True)
         )
         await call.answer("Вы встали в очередь поиска!")
+
 
 
 @router.callback_query(F.data.startswith("pvp_ans_"))
