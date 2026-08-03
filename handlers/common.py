@@ -62,6 +62,25 @@ async def run_update_task(status_msg: Message):
                 git_bin = p
                 break
 
+    if not git_bin:
+        try:
+            cmd = ""
+            if shutil.which("apt-get"):
+                cmd = "sudo apt-get update && sudo apt-get install -y git || apt-get update && apt-get install -y git"
+            elif shutil.which("apk"):
+                cmd = "apk add git"
+            elif shutil.which("yum"):
+                cmd = "sudo yum install -y git || yum install -y git"
+            
+            if cmd:
+                await status_msg.edit_text("⚙️ <i>Установка программы Git для автообновлений...</i>", parse_mode="HTML")
+                proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                await proc.communicate()
+            
+            git_bin = shutil.which("git") or ("/usr/bin/git" if os.path.exists("/usr/bin/git") else None)
+        except Exception:
+            pass
+
     git_output = ""
     if git_bin:
         try:
@@ -982,123 +1001,57 @@ async def cb_pvp_ans(call: CallbackQuery):
 
 
 
-pvp_active_duels = {}
-
-async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None):
-    duel = pvp_active_duels.get(duel_id)
-    if not duel:
-        return
-
-    if q_index >= 5:
-        # Завершение дуэли для пользователя
-        p1 = duel['p1']
-        p2 = duel['p2']
-        p1_score = duel['scores'].get(p1['id'], 0)
-        p2_score = duel['scores'].get(p2['id'], 0)
-
-        if p1_score > p2_score:
-            winner_text = f"🏆 <b>Победитель: {p1['name']}!</b> (+50 XP)"
-        elif p2_score > p1_score:
-            winner_text = f"🏆 <b>Победитель: {p2['name']}!</b> (+50 XP)"
-        else:
-            winner_text = f"🤝 <b>Ничья! Оба игрока равны!</b> (+25 XP)"
-
-        final_text = (
-            f"🏁 <b>ДУЭЛЬ ЗАВЕРШЕНА!</b>\n\n"
-            f"🔵 <b>{p1['name']}</b>: {p1_score} / 5 очков\n"
-            f"🔴 <b>{p2['name']}</b>: {p2_score} / 5 очков\n\n"
-            f"{winner_text}"
-        )
 
 
-
-@router.callback_query(F.data == "pvp_search")
-async def cb_pvp_search(call: CallbackQuery):
+@router.callback_query(F.data == "pvp_play_bot")
+async def cb_pvp_play_bot(call: CallbackQuery):
     user_id = call.from_user.id
     user_name = call.from_user.first_name
 
-    if pvp_queue and pvp_queue[0]['id'] != user_id:
-        opponent = pvp_queue.pop(0)
+    # Удаляем из очереди если он там был
+    global pvp_queue
+    pvp_queue[:] = [u for u in pvp_queue if u['id'] != user_id]
 
-        # Генерируем 5 вопросов с вариантами
-        from database.db import get_db
+    import uuid
+    import time
+    import asyncio
+
+    duel_id = str(uuid.uuid4())[:8]
+    end_time = time.time() + 300 # 5 минут
+
+    bot_opponent = {'id': 0, 'name': "🤖 AI Бот (ИИ)"}
+
+    pvp_active_duels[duel_id] = {
+        "p1": bot_opponent,
+        "p2": {"id": user_id, "name": user_name},
+        "scores": {bot_opponent['id']: 0, user_id: 0},
+        "end_time": end_time,
+        "user_questions": {},
+        "finished": False,
+        "is_bot_match": True
+    }
+
+    await call.answer("⚔️ Дуэль с ИИ начата! Погнали!", show_alert=True)
+
+    # Таймер завершения
+    asyncio.get_event_loop().call_later(300, lambda: asyncio.create_task(finish_5min_pvp_duel(call.bot, duel_id)))
+
+    # Запуск дуэли пользователю
+    asyncio.create_task(send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message))
+
+    # Запускаем AI задачу, чтобы бот симулировал игру
+    async def simulate_ai_pvp_progress(d_id: str):
         import random
-        import uuid
+        duel = pvp_active_duels.get(d_id)
+        if not duel: return
+        while not duel.get('finished') and pvp_active_duels.get(d_id):
+            await asyncio.sleep(random.uniform(5, 12))
+            if duel.get('finished'):
+                break
+            if random.random() < 0.7:
+                duel['scores'][0] += 1
 
-        async with get_db() as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 20") as cursor:
-                all_words = await cursor.fetchall()
-
-        target_words = all_words[:5]
-        questions = []
-        for tw in target_words:
-            eng = tw['english_word']
-            correct_tr = tw['translation']
-            wrong_pool = [w['translation'] for w in all_words if w['translation'] != correct_tr]
-            wrong_options = random.sample(wrong_pool, min(3, len(wrong_pool)))
-            options = wrong_options + [correct_tr]
-            random.shuffle(options)
-            questions.append({"eng": eng, "tr": correct_tr, "options": options})
-
-        duel_id = str(uuid.uuid4())[:8]
-        pvp_active_duels[duel_id] = {
-            "p1": opponent,
-            "p2": {"id": user_id, "name": user_name},
-            "questions": questions,
-            "scores": {opponent['id']: 0, user_id: 0}
-        }
-
-        await call.answer("⚔️ Соперник найден! Погнали!", show_alert=True)
-        # Отправляем 1-й вопрос обоим
-        if 'msg' in opponent:
-            await send_pvp_question(call.bot, opponent['id'], duel_id, 0, target_message=opponent['msg'])
-        else:
-            await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
-
-        await send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message)
-
-    else:
-        if user_id not in [u['id'] for u in pvp_queue]:
-            pvp_queue.append({'id': user_id, 'name': user_name, 'msg': call.message})
-
-        from keyboards.inline import get_pvp_menu_keyboard
-        await call.message.edit_text(
-            f"🔍 <b>ПОИСК СОПЕРНИКА НА АРЕНЕ...</b>\n\n"
-            f"Вы добавлены в очередь арены. Ожидайте второго игрока!\n"
-            f"<i>(Как только второй игрок нажмет «Искать соперника», дуэль автоматически начнется)</i>",
-            parse_mode="HTML",
-            reply_markup=get_pvp_menu_keyboard(in_queue=True)
-        )
-        await call.answer("Вы встали в очередь поиска!")
-
-
-
-@router.callback_query(F.data.startswith("pvp_ans_"))
-async def cb_pvp_ans(call: CallbackQuery):
-    parts = call.data.split("_")
-    duel_id = parts[2]
-    q_index = int(parts[3])
-    opt_idx = int(parts[4])
-    user_id = call.from_user.id
-
-    duel = pvp_active_duels.get(duel_id)
-    if not duel:
-        await call.answer("Дуэль завершена.", show_alert=True)
-        return
-
-    q_data = duel['questions'][q_index]
-    chosen_opt = q_data['options'][opt_idx]
-
-    if chosen_opt == q_data['tr']:
-        duel['scores'][user_id] = duel['scores'].get(user_id, 0) + 1
-        await call.answer("✅ ВЕРНО! (+1 очко)", show_alert=True)
-    else:
-        await call.answer(f"❌ НЕВЕРНО! Правильно: {q_data['tr']}", show_alert=True)
-
-    await call.message.delete()
-    await send_pvp_question(call.bot, user_id, duel_id, q_index + 1)
-
+    asyncio.create_task(simulate_ai_pvp_progress(duel_id))
 
 
 @router.callback_query(F.data == "pvp_cancel")

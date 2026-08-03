@@ -221,8 +221,10 @@ def get_pvp_menu_keyboard(in_queue: bool = False):
     keyboard = []
     if not in_queue:
         keyboard.append([InlineKeyboardButton(text="⚔️ Искать соперника (Matchmaking)", callback_data="pvp_search")])
+        keyboard.append([InlineKeyboardButton(text="🤖 Играть с ботом (AI Тест)", callback_data="pvp_play_bot")])
     else:
         keyboard.append([InlineKeyboardButton(text="⏳ Поиск соперника... (Нажмите ❌ для отмены)", callback_data="pvp_cancel")])
+        keyboard.append([InlineKeyboardButton(text="🤖 Играть с ботом (Не ждать)", callback_data="pvp_play_bot")])
 
     keyboard.append([InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

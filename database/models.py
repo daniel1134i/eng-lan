@@ -14,7 +14,7 @@ async def get_or_create_user(telegram_id: int):
         
         if not user:
             await db.execute(
-                "INSERT INTO users (telegram_id, streak_days, last_active_date) VALUES (?, 1, ?)",
+                "INSERT OR IGNORE INTO users (telegram_id, streak_days, last_active_date) VALUES (?, 1, ?)",
                 (telegram_id, today_str)
             )
             await db.commit()
