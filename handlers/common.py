@@ -894,49 +894,99 @@ async def cb_mode_pvp(call: CallbackQuery):
     await call.answer()
 
 
+pvp_active_duels = {}
+
+async def send_pvp_question(bot, user_id, duel_id, q_index):
+    duel = pvp_active_duels.get(duel_id)
+    if not duel:
+        return
+
+    if q_index >= 5:
+        # Завершение дуэли для пользователя
+        p1 = duel['p1']
+        p2 = duel['p2']
+        p1_score = duel['scores'].get(p1['id'], 0)
+        p2_score = duel['scores'].get(p2['id'], 0)
+
+        if p1_score > p2_score:
+            winner_text = f"🏆 <b>Победитель: {p1['name']}!</b> (+50 XP)"
+        elif p2_score > p1_score:
+            winner_text = f"🏆 <b>Победитель: {p2['name']}!</b> (+50 XP)"
+        else:
+            winner_text = f"🤝 <b>Ничья! Оба игрока равны!</b> (+25 XP)"
+
+        final_text = (
+            f"🏁 <b>ДУЭЛЬ ЗАВЕРШЕНА!</b>\n\n"
+            f"🔵 <b>{p1['name']}</b>: {p1_score} / 5 очков\n"
+            f"🔴 <b>{p2['name']}</b>: {p2_score} / 5 очков\n\n"
+            f"{winner_text}"
+        )
+        from keyboards.inline import get_main_menu_keyboard
+        try:
+            await bot.send_message(user_id, final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        except Exception:
+            pass
+        return
+
+    q_data = duel['questions'][q_index]
+    from keyboards.inline import get_pvp_quiz_keyboard
+    text = (
+        f"⚔️ <b>PvP ДУЭЛЬ — ВОПРОС {q_index + 1} / 5</b>\n\n"
+        f"🔤 Как переводится слово: <b>{q_data['eng'].capitalize()}</b>?"
+    )
+    try:
+        await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, q_data['options']))
+    except Exception:
+        pass
+
+
 @router.callback_query(F.data == "pvp_search")
 async def cb_pvp_search(call: CallbackQuery):
     user_id = call.from_user.id
     user_name = call.from_user.first_name
-    from keyboards.inline import get_pvp_menu_keyboard
 
-    # Если уже кто-то ждет в очереди
     if pvp_queue and pvp_queue[0]['id'] != user_id:
         opponent = pvp_queue.pop(0)
 
-        # Достаем 5 слов для дуэли
+        # Генерируем 5 вопросов с вариантами
         from database.db import get_db
-        import json
+        import random
+        import uuid
+
         async with get_db() as db:
             db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT word_id, english_word, translation FROM words ORDER BY RANDOM() LIMIT 5") as cursor:
-                words = await cursor.fetchall()
-                words_list = [{"eng": w['english_word'], "tr": w['translation']} for w in words]
+            async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 20") as cursor:
+                all_words = await cursor.fetchall()
 
-        words_str = "\n".join([f"• <b>{w['eng'].capitalize()}</b> — {w['tr']}" for w in words_list])
+        target_words = all_words[:5]
+        questions = []
+        for tw in target_words:
+            eng = tw['english_word']
+            correct_tr = tw['translation']
+            wrong_pool = [w['translation'] for w in all_words if w['translation'] != correct_tr]
+            wrong_options = random.sample(wrong_pool, min(3, len(wrong_pool)))
+            options = wrong_options + [correct_tr]
+            random.shuffle(options)
+            questions.append({"eng": eng, "tr": correct_tr, "options": options})
 
-        match_text = (
-            f"⚔️ <b>СОПЕРНИК НАЙДЕН! ДУЭЛЬ НАЧАЛАСЬ!</b>\n\n"
-            f"🔵 Игрок 1: <b>{opponent['name']}</b>\n"
-            f"🔴 Игрок 2: <b>{user_name}</b>\n\n"
-            f"📋 <b>Ваши 5 слов для раунда:</b>\n"
-            f"{words_str}\n\n"
-            f"🔥 <i>Оба игрока получили слова! Победит тот, кто знает больше слов!</i>"
-        )
+        duel_id = str(uuid.uuid4())[:8]
+        pvp_active_duels[duel_id] = {
+            "p1": opponent,
+            "p2": {"id": user_id, "name": user_name},
+            "questions": questions,
+            "scores": {opponent['id']: 0, user_id: 0}
+        }
 
-        # Отправляем оповещение сопернику
-        try:
-            await call.bot.send_message(opponent['id'], match_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
-        except Exception:
-            pass
-
-        await call.message.edit_text(match_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
-        await call.answer("⚔️ Соперник найден! Погнали!", show_alert=True)
+        await call.answer("⚔️ Соперник найден! Дуэль началась!", show_alert=True)
+        # Запускаем Вопрос 1 для обоих
+        await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
+        await send_pvp_question(call.bot, user_id, duel_id, 0)
 
     else:
         if user_id not in [u['id'] for u in pvp_queue]:
             pvp_queue.append({'id': user_id, 'name': user_name})
 
+        from keyboards.inline import get_pvp_menu_keyboard
         await call.message.edit_text(
             f"🔍 <b>ПОИСК СОПЕРНИКА НА АРЕНЕ...</b>\n\n"
             f"Вы добавлены в очередь арены. Ожидайте второго игрока!\n"
@@ -945,6 +995,33 @@ async def cb_pvp_search(call: CallbackQuery):
             reply_markup=get_pvp_menu_keyboard(in_queue=True)
         )
         await call.answer("Вы встали в очередь поиска!")
+
+
+@router.callback_query(F.data.startswith("pvp_ans_"))
+async def cb_pvp_ans(call: CallbackQuery):
+    parts = call.data.split("_")
+    duel_id = parts[2]
+    q_index = int(parts[3])
+    opt_idx = int(parts[4])
+    user_id = call.from_user.id
+
+    duel = pvp_active_duels.get(duel_id)
+    if not duel:
+        await call.answer("Дуэль завершена.", show_alert=True)
+        return
+
+    q_data = duel['questions'][q_index]
+    chosen_opt = q_data['options'][opt_idx]
+
+    if chosen_opt == q_data['tr']:
+        duel['scores'][user_id] = duel['scores'].get(user_id, 0) + 1
+        await call.answer("✅ ВЕРНО! (+1 очко)", show_alert=True)
+    else:
+        await call.answer(f"❌ НЕВЕРНО! Правильно: {q_data['tr']}", show_alert=True)
+
+    await call.message.delete()
+    await send_pvp_question(call.bot, user_id, duel_id, q_index + 1)
+
 
 
 @router.callback_query(F.data == "pvp_cancel")

@@ -227,5 +227,13 @@ def get_pvp_menu_keyboard(in_queue: bool = False):
     keyboard.append([InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+def get_pvp_quiz_keyboard(duel_id: str, q_index: int, options: list):
+    keyboard = []
+    for i, opt in enumerate(options):
+        keyboard.append([InlineKeyboardButton(text=opt, callback_data=f"pvp_ans_{duel_id}_{q_index}_{i}")])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+
 
 
