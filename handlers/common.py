@@ -872,60 +872,93 @@ async def cb_builder_check(call: CallbackQuery):
     await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_builder_keyboard([], session['original_words'], session_id))
     await call.answer()
 
-# ----------------- ⚔️ РЕЖИМ PVP ДУЭЛИ 1v1 -----------------
+# Глобальная очередь поиска онлайн-соперников
+pvp_queue = []
+
 @router.callback_query(F.data == "mode_pvp")
 async def cb_mode_pvp(call: CallbackQuery):
-    bot_obj = call.bot
-    bot_info = await bot_obj.get_me()
-    bot_username = bot_info.username
-
+    user_id = call.from_user.id
+    in_queue = user_id in pvp_queue
     from keyboards.inline import get_pvp_menu_keyboard
     text = (
-        f"⚔️ <b>PvP ДУЭЛИ С ДРУЗЬЯМИ (1v1)</b>\n\n"
-        f"Вызовите любого друга на интерактивную викторину из 5 случайных слов!\n\n"
-        f"🏆 <b>Правила:</b>\n"
-        f"• Кто даст больше правильных ответов — тот побеждает!\n"
-        f"• Бот автоматически подсчитает очки и объявит победителя прямо в чате."
+        f"⚔️ <b>PvP ДУЭЛИ И АРЕНА (1v1)</b>\n\n"
+        f"Нажмите кнопку <i>«⚔️ Искать соперника»</i> ниже!\n"
+        f"Бот автоматически подберет другого живого пользователя, который сейчас ищет дуэль.\n\n"
+        f"🏆 <b>Правила дуэли:</b>\n"
+        f"• Обоим игрокам выдается одинаковый набор из 5 случайных слов.\n"
+        f"• Кто наберет больше очков — тот выигрывает дуэль!"
     )
-    await call.message.answer(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(bot_username))
+    await call.message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(in_queue))
     await call.answer()
 
 
-@router.callback_query(F.data == "pvp_create")
-async def cb_pvp_create(call: CallbackQuery):
+@router.callback_query(F.data == "pvp_search")
+async def cb_pvp_search(call: CallbackQuery):
     user_id = call.from_user.id
     user_name = call.from_user.first_name
+    from keyboards.inline import get_pvp_menu_keyboard
 
-    import uuid
-    import json
-    duel_id = str(uuid.uuid4())[:8]
+    # Если уже кто-то ждет в очереди
+    if pvp_queue and pvp_queue[0]['id'] != user_id:
+        opponent = pvp_queue.pop(0)
 
-    # Берем 5 случайных слов для дуэли
-    from database.db import get_db
-    async with get_db() as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT word_id, english_word, translation FROM words ORDER BY RANDOM() LIMIT 5") as cursor:
-            words = await cursor.fetchall()
-            words_data = [{"id": w['word_id'], "eng": w['english_word'], "tr": w['translation']} for w in words]
+        # Достаем 5 слов для дуэли
+        from database.db import get_db
+        import json
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT word_id, english_word, translation FROM words ORDER BY RANDOM() LIMIT 5") as cursor:
+                words = await cursor.fetchall()
+                words_list = [{"eng": w['english_word'], "tr": w['translation']} for w in words]
 
-        await db.execute("""
-            INSERT INTO duels (duel_id, creator_id, creator_name, words_json, status)
-            VALUES (?, ?, ?, ?, 'pending')
-        """, (duel_id, user_id, user_name, json.dumps(words_data)))
-        await db.commit()
+        words_str = "\n".join([f"• <b>{w['eng'].capitalize()}</b> — {w['tr']}" for w in words_list])
 
-    bot_info = await call.bot.get_me()
-    invite_link = f"https://t.me/{bot_info.username}?start=duel_{duel_id}"
+        match_text = (
+            f"⚔️ <b>СОПЕРНИК НАЙДЕН! ДУЭЛЬ НАЧАЛАСЬ!</b>\n\n"
+            f"🔵 Игрок 1: <b>{opponent['name']}</b>\n"
+            f"🔴 Игрок 2: <b>{user_name}</b>\n\n"
+            f"📋 <b>Ваши 5 слов для раунда:</b>\n"
+            f"{words_str}\n\n"
+            f"🔥 <i>Оба игрока получили слова! Победит тот, кто знает больше слов!</i>"
+        )
 
-    text = (
-        f"⚔️ <b>ДУЭЛЬ СОЗДАНА!</b>\n\n"
-        f"👤 Создатель: <b>{user_name}</b>\n"
-        f"🔗 <b>Ссылка для вызова соперника:</b>\n"
-        f"<code>{invite_link}</code>\n\n"
-        f"💬 Перешлите эту ссылку другу в ЛС или в ваш групповой чат!\n"
-        f"Как только друг перейдет по ней, дуэль начнется!"
+        # Отправляем оповещение сопернику
+        try:
+            await call.bot.send_message(opponent['id'], match_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        except Exception:
+            pass
+
+        await call.message.edit_text(match_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        await call.answer("⚔️ Соперник найден! Погнали!", show_alert=True)
+
+    else:
+        if user_id not in [u['id'] for u in pvp_queue]:
+            pvp_queue.append({'id': user_id, 'name': user_name})
+
+        await call.message.edit_text(
+            f"🔍 <b>ПОИСК СОПЕРНИКА НА АРЕНЕ...</b>\n\n"
+            f"Вы добавлены в очередь арены. Ожидайте второго игрока!\n"
+            f"<i>(Как только второй игрок нажмет «Искать соперника», дуэль автоматически начнется)</i>",
+            parse_mode="HTML",
+            reply_markup=get_pvp_menu_keyboard(in_queue=True)
+        )
+        await call.answer("Вы встали в очередь поиска!")
+
+
+@router.callback_query(F.data == "pvp_cancel")
+async def cb_pvp_cancel(call: CallbackQuery):
+    user_id = call.from_user.id
+    global pvp_queue
+    pvp_queue = [u for u in pvp_queue if u['id'] != user_id]
+
+    from keyboards.inline import get_pvp_menu_keyboard
+    await call.message.edit_text(
+        f"❌ <b>Поиск соперника отменен.</b>",
+        parse_mode="HTML",
+        reply_markup=get_pvp_menu_keyboard(in_queue=False)
     )
-    await call.message.answer(text, parse_mode="HTML", reply_markup=get_back_to_menu_keyboard())
+    await call.answer("Поиск отменен.")
+
 @router.callback_query(F.data == "help_info")
 async def cb_help(call: CallbackQuery):
     help_text = (

@@ -217,15 +217,15 @@ def get_builder_keyboard(selected_words: list, pool_words: list, sentence_id: st
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_pvp_menu_keyboard(bot_username: str):
-    keyboard = [
-        [
-            InlineKeyboardButton(text="⚔️ Создать новую дуэль", callback_data="pvp_create")
-        ],
-        [
-            InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
-        ]
-    ]
+def get_pvp_menu_keyboard(in_queue: bool = False):
+    keyboard = []
+    if not in_queue:
+        keyboard.append([InlineKeyboardButton(text="⚔️ Искать соперника (Matchmaking)", callback_data="pvp_search")])
+    else:
+        keyboard.append([InlineKeyboardButton(text="⏳ Поиск соперника... (Нажмите ❌ для отмены)", callback_data="pvp_cancel")])
+
+    keyboard.append([InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 
