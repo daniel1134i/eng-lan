@@ -997,35 +997,7 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
             f"🔴 <b>{p2['name']}</b>: {p2_score} / 5 очков\n\n"
             f"{winner_text}"
         )
-        from keyboards.inline import get_main_menu_keyboard
-        if target_message:
-            try:
-                await target_message.edit_text(final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
-                return
-            except Exception:
-                pass
-        try:
-            await bot.send_message(user_id, final_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
-        except Exception:
-            pass
-        return
 
-    q_data = duel['questions'][q_index]
-    from keyboards.inline import get_pvp_quiz_keyboard
-    text = (
-        f"⚔️ <b>PvP ДУЭЛЬ — ВОПРОС {q_index + 1} / 5</b>\n\n"
-        f"🔤 Как переводится слово: <b>{q_data['eng'].capitalize()}</b>?"
-    )
-    if target_message:
-        try:
-            await target_message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, q_data['options']))
-            return
-        except Exception:
-            pass
-    try:
-        await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, q_data['options']))
-    except Exception:
-        pass
 
 
 @router.callback_query(F.data == "pvp_search")
