@@ -863,7 +863,6 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
         await finish_5min_pvp_duel(bot, duel_id)
         return
 
-    # Динамически генерируем вопрос из банка
     from database.db import get_db
     import random
     async with get_db() as db:
@@ -879,7 +878,6 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
     options = wrong_options + [correct_tr]
     random.shuffle(options)
 
-    # Сохраняем вопрос текущему игроку
     duel['user_questions'][user_id] = {'eng': eng, 'tr': correct_tr, 'options': options}
 
     user_score = duel['scores'].get(user_id, 0)
@@ -890,16 +888,20 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
         f"⭐ Ваши баллы: <b>{user_score}</b>\n\n"
         f"🔤 Переведите слово: <b>{eng.capitalize()}</b>"
     )
+
+    sent = False
     if target_message:
         try:
             await target_message.edit_text(text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, options))
-            return
+            sent = True
         except Exception:
             pass
-    try:
-        await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, options))
-    except Exception:
-        pass
+
+    if not sent:
+        try:
+            await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=get_pvp_quiz_keyboard(duel_id, q_index, options))
+        except Exception as e:
+            print(f"Error sending pvp question to {user_id}: {e}")
 
 
 @router.callback_query(F.data == "pvp_search")
@@ -907,13 +909,16 @@ async def cb_pvp_search(call: CallbackQuery):
     user_id = call.from_user.id
     user_name = call.from_user.first_name
 
-    if pvp_queue and pvp_queue[0]['id'] != user_id:
+    # Удаляем устаревших из очереди если тот же юзер
+    pvp_queue[:] = [u for u in pvp_queue if u['id'] != user_id]
+
+    if len(pvp_queue) > 0:
         opponent = pvp_queue.pop(0)
         import uuid
         import time
 
         duel_id = str(uuid.uuid4())[:8]
-        end_time = time.time() + 300 # 5 минут (300 секунд)
+        end_time = time.time() + 300 # 5 минут
 
         pvp_active_duels[duel_id] = {
             "p1": opponent,
@@ -924,25 +929,18 @@ async def cb_pvp_search(call: CallbackQuery):
             "finished": False
         }
 
-        await call.answer("⚔️ Соперник найден! 5-минутный марафон начался!", show_alert=True)
+        await call.answer("⚔️ Соперник найден! Погнали!", show_alert=True)
 
-        # Автоматический таймер завершения ровно через 5 минут
+        # Таймер завершения
         import asyncio
-        asyncio.create_task(asyncio.sleep(300))
         asyncio.get_event_loop().call_later(300, lambda: asyncio.create_task(finish_5min_pvp_duel(call.bot, duel_id)))
 
-        # Запускаем Марафон обоим игрокам
-        if 'msg' in opponent:
-            await send_pvp_question(call.bot, opponent['id'], duel_id, 0, target_message=opponent['msg'])
-        else:
-            await send_pvp_question(call.bot, opponent['id'], duel_id, 0)
-
-        await send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message)
+        # Запуск дуэли обоим участникам
+        asyncio.create_task(send_pvp_question(call.bot, opponent['id'], duel_id, 0, target_message=opponent.get('msg')))
+        asyncio.create_task(send_pvp_question(call.bot, user_id, duel_id, 0, target_message=call.message))
 
     else:
-        if user_id not in [u['id'] for u in pvp_queue]:
-            pvp_queue.append({'id': user_id, 'name': user_name, 'msg': call.message})
-
+        pvp_queue.append({'id': user_id, 'name': user_name, 'msg': call.message})
         from keyboards.inline import get_pvp_menu_keyboard
         await call.message.edit_text(
             f"🔍 <b>ПОИСК СОПЕРНИКА НА 5-МИНУТНУЮ ДУЭЛЬ...</b>\n\n"
@@ -952,6 +950,7 @@ async def cb_pvp_search(call: CallbackQuery):
             reply_markup=get_pvp_menu_keyboard(in_queue=True)
         )
         await call.answer("Вы встали в очередь поиска!")
+
 
 
 @router.callback_query(F.data.startswith("pvp_ans_"))
