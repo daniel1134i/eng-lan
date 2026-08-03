@@ -768,10 +768,13 @@ async def cb_builder_pick(call: CallbackQuery):
     session = user_builder_sessions.get(session_id)
     if not session:
         await call.answer("Сессия истекла. Нажмите 'Следующая фраза'.", show_alert=True)
+pvp_queue = []
+pvp_active_duels = {}
+
 @router.callback_query(F.data == "mode_pvp")
 async def cb_mode_pvp(call: CallbackQuery):
     user_id = call.from_user.id
-    in_queue = user_id in pvp_queue
+    in_queue = user_id in [u['id'] for u in pvp_queue]
     from keyboards.inline import get_pvp_menu_keyboard
     text = (
         f"⚔️ <b>PvP ДУЭЛИ И АРЕНА (1v1)</b>\n\n"
@@ -786,6 +789,7 @@ async def cb_mode_pvp(call: CallbackQuery):
     except Exception:
         await call.message.answer(text, parse_mode="HTML", reply_markup=get_pvp_menu_keyboard(in_queue))
     await call.answer()
+
 
 
 pvp_active_duels = {}
