@@ -54,7 +54,7 @@ async def run_update_task(status_msg: Message):
     import sys
     import shutil
     try:
-        git_cmd = shutil.which("git") or "/usr/bin/git"
+        git_cmd = shutil.which("git") or "git"
         proc_git = await asyncio.create_subprocess_shell(
             f"{git_cmd} pull origin main",
             stdout=asyncio.subprocess.PIPE,
@@ -63,6 +63,7 @@ async def run_update_task(status_msg: Message):
         )
         stdout_git, stderr_git = await proc_git.communicate()
         output_text = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
+
 
 
         await status_msg.edit_text(
