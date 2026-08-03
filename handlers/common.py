@@ -52,15 +52,18 @@ def make_progress_bar(percentage: float, length: int = 10) -> str:
 async def run_update_task(status_msg: Message):
     import asyncio
     import sys
+    import shutil
     try:
+        git_cmd = shutil.which("git") or "/usr/bin/git"
         proc_git = await asyncio.create_subprocess_shell(
-            "git pull origin main",
+            f"{git_cmd} pull origin main",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=os.getcwd()
         )
         stdout_git, stderr_git = await proc_git.communicate()
         output_text = stdout_git.decode().strip() if stdout_git else stderr_git.decode().strip()
+
 
         await status_msg.edit_text(
             "🚀 <b>СЛУЖБА ОБНОВЛЕНИЯ БОТА</b>\n\n"
