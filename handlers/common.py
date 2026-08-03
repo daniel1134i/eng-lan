@@ -888,6 +888,16 @@ async def send_pvp_question(bot, user_id, duel_id, q_index, target_message=None)
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT english_word, translation FROM words ORDER BY RANDOM() LIMIT 15") as cursor:
             all_words = await cursor.fetchall()
+            
+    if not all_words or len(all_words) < 4:
+        all_words = [
+            {"english_word": "apple", "translation": "яблоко"},
+            {"english_word": "sun", "translation": "солнце"},
+            {"english_word": "water", "translation": "вода"},
+            {"english_word": "fire", "translation": "огонь"},
+            {"english_word": "earth", "translation": "земля"},
+            {"english_word": "friend", "translation": "друг"}
+        ]
 
     target = all_words[0]
     eng = target['english_word']
