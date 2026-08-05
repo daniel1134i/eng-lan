@@ -204,6 +204,14 @@ async def cmd_start(message: Message):
     await message.answer(welcome_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
 
 
+@router.callback_query(F.data == "reset_weekly_pack")
+async def cb_reset_weekly_pack(call: CallbackQuery):
+    user_id = call.from_user.id
+    from database.models import reset_pack
+    await reset_pack(user_id)
+    await call.answer("✅ Пак сброшен! Теперь вы можете набирать новые слова.", show_alert=True)
+    await cb_main_menu(call)
+
 @router.callback_query(F.data == "main_menu")
 async def cb_main_menu(call: CallbackQuery):
     await update_user_activity(call.from_user.id)

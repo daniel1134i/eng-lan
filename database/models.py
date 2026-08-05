@@ -200,8 +200,28 @@ async def get_next_card_word(telegram_id: int, current_word_id: int = None):
 
         cat = await get_user_selected_category(telegram_id)
         
+        # Weekly pack logic
+        async with db.execute("SELECT pack_start_date, words_added_this_pack FROM users WHERE telegram_id = ?", (telegram_id,)) as cursor:
+            user_row = await cursor.fetchone()
+        
+        words_added = 0
+        if user_row:
+            if user_row['pack_start_date']:
+                from datetime import datetime
+                pack_start = datetime.fromisoformat(user_row['pack_start_date'])
+                if (datetime.now() - pack_start).days >= 7:
+                    await db.execute("UPDATE users SET pack_start_date = NULL, words_added_this_pack = 0 WHERE telegram_id = ?", (telegram_id,))
+                    await db.commit()
+                else:
+                    words_added = user_row['words_added_this_pack'] or 0
+            else:
+                words_added = user_row['words_added_this_pack'] or 0
+
         where_clause = "WHERE uw.user_id = ? AND uw.status != 'learned'"
         params = [telegram_id]
+        
+        if words_added >= 50:
+            where_clause += " AND uw.status != 'new'"
 
         if cat != 'all':
             where_clause += " AND w.category = ?"
@@ -236,8 +256,28 @@ async def get_quiz_question(telegram_id: int):
         await db.commit()
         cat = await get_user_selected_category(telegram_id)
 
+        # Weekly pack logic
+        async with db.execute("SELECT pack_start_date, words_added_this_pack FROM users WHERE telegram_id = ?", (telegram_id,)) as cursor:
+            user_row = await cursor.fetchone()
+        
+        words_added = 0
+        if user_row:
+            if user_row['pack_start_date']:
+                from datetime import datetime
+                pack_start = datetime.fromisoformat(user_row['pack_start_date'])
+                if (datetime.now() - pack_start).days >= 7:
+                    await db.execute("UPDATE users SET pack_start_date = NULL, words_added_this_pack = 0 WHERE telegram_id = ?", (telegram_id,))
+                    await db.commit()
+                else:
+                    words_added = user_row['words_added_this_pack'] or 0
+            else:
+                words_added = user_row['words_added_this_pack'] or 0
+
         where_clause = "WHERE uw.user_id = ? AND uw.status != 'learned'"
         params = [telegram_id]
+        
+        if words_added >= 50:
+            where_clause += " AND uw.status != 'new'"
 
         if cat != 'all':
             where_clause += " AND w.category = ?"
@@ -287,11 +327,47 @@ async def mark_word_as_learned(telegram_id: int, word_id: int):
 
 async def mark_word_as_learning(telegram_id: int, word_id: int):
     async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        
+        # Check current status to see if it was 'new'
+        async with db.execute("SELECT status FROM user_words WHERE user_id = ? AND word_id = ?", (telegram_id, word_id)) as cursor:
+            row = await cursor.fetchone()
+        
+        was_new = not row or row['status'] == 'new'
+
         await db.execute("""
             INSERT INTO user_words (user_id, word_id, status)
             VALUES (?, ?, 'learning')
             ON CONFLICT(user_id, word_id) DO UPDATE SET status = 'learning'
         """, (telegram_id, word_id))
+        
+        if was_new:
+            async with db.execute("SELECT pack_start_date, words_added_this_pack FROM users WHERE telegram_id = ?", (telegram_id,)) as cursor:
+                user_row = await cursor.fetchone()
+            
+            if user_row:
+                new_count = (user_row['words_added_this_pack'] or 0) + 1
+                pack_start = user_row['pack_start_date']
+                from datetime import datetime
+                if not pack_start:
+                    pack_start = datetime.now().isoformat()
+                
+                await db.execute("UPDATE users SET words_added_this_pack = ?, pack_start_date = ? WHERE telegram_id = ?", 
+                                 (new_count, pack_start, telegram_id))
+        await db.commit()
+
+async def get_pack_info(telegram_id: int):
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT pack_start_date, words_added_this_pack FROM users WHERE telegram_id = ?", (telegram_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return row['words_added_this_pack'] or 0, row['pack_start_date']
+            return 0, None
+
+async def reset_pack(telegram_id: int):
+    async with get_db() as db:
+        await db.execute("UPDATE users SET pack_start_date = NULL, words_added_this_pack = 0 WHERE telegram_id = ?", (telegram_id,))
         await db.commit()
 
 

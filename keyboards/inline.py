@@ -237,5 +237,8 @@ def get_pvp_quiz_keyboard(duel_id: str, q_index: int, options: list):
 
 
 
-
-
+def get_reset_pack_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Выучил недельный пак", callback_data="reset_weekly_pack")],
+        [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
+    ])

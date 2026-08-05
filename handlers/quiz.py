@@ -18,11 +18,23 @@ async def send_next_quiz(call: CallbackQuery):
 
     if not word or not options:
         total = stats['total_words']
-        await call.message.edit_text(
-            f"🎉 <b>Поздравляем!</b>\nВы выучили все {total} слов!",
-            parse_mode="HTML",
-            reply_markup=get_back_to_menu_keyboard()
-        )
+        from database.models import get_pack_info
+        words_added, pack_start = await get_pack_info(user_id)
+        if words_added >= 50:
+            from keyboards.inline import get_reset_pack_keyboard
+            await call.message.edit_text(
+                "🎉 <b>Вы выучили недельный пак слов (50/50)!</b>\n\n"
+                "Бот выдает новые слова только через 7 дней от начала изучения пака.\n"
+                "Если вы хотите набрать следующий пак прямо сейчас, нажмите кнопку ниже.",
+                parse_mode="HTML",
+                reply_markup=get_reset_pack_keyboard()
+            )
+        else:
+            await call.message.edit_text(
+                f"🎉 <b>Поздравляем!</b>\nВы выучили все {total} слов!",
+                parse_mode="HTML",
+                reply_markup=get_back_to_menu_keyboard()
+            )
         return
 
     word_id = word['word_id']

@@ -97,6 +97,16 @@ async def init_db():
         except Exception:
             pass
             
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN pack_start_date TIMESTAMP DEFAULT NULL")
+        except Exception:
+            pass
+
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN words_added_this_pack INTEGER DEFAULT 0")
+        except Exception:
+            pass
+            
         # Таблица PvP дуэлей
         await db.execute("""
             CREATE TABLE IF NOT EXISTS duels (
