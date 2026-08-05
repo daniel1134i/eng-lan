@@ -3065,6 +3065,68 @@ NEW_VOCABULARY_PACKS = [
     ("make a start", "начать", "phrase", "Let us make a start on the project.", "Конструктор фраз"),
     ("take standard", "следовать стандарту", "phrase", "We must take standard precautions.", "Конструктор фраз"),
 
+    # 🧩 Местоимения и связки
+    ("I", "я", "pronoun", "I am learning English.", "Местоимения и связки"),
+    ("you", "ты, вы", "pronoun", "You are my friend.", "Местоимения и связки"),
+    ("he", "он", "pronoun", "He is a good doctor.", "Местоимения и связки"),
+    ("she", "она", "pronoun", "She loves to read.", "Местоимения и связки"),
+    ("it", "это, он/она (неодуш.)", "pronoun", "It is a beautiful day.", "Местоимения и связки"),
+    ("we", "мы", "pronoun", "We work together.", "Местоимения и связки"),
+    ("they", "они", "pronoun", "They went to the park.", "Местоимения и связки"),
+    
+    ("me", "мне, меня", "pronoun", "Give it to me.", "Местоимения и связки"),
+    ("him", "ему, его", "pronoun", "I saw him yesterday.", "Местоимения и связки"),
+    ("her", "ей, её", "pronoun", "Tell her the truth.", "Местоимения и связки"),
+    ("us", "нам, нас", "pronoun", "Join us for dinner.", "Местоимения и связки"),
+    ("them", "им, их", "pronoun", "I bought gifts for them.", "Местоимения и связки"),
+    
+    ("my", "мой", "pronoun", "This is my house.", "Местоимения и связки"),
+    ("your", "твой, ваш", "pronoun", "What is your name?", "Местоимения и связки"),
+    ("his", "его (принадлежность)", "pronoun", "His car is fast.", "Местоимения и связки"),
+    ("our", "наш", "pronoun", "Our team won.", "Местоимения и связки"),
+    ("their", "их (принадлежность)", "pronoun", "Their children are playing.", "Местоимения и связки"),
+    
+    ("mine", "мой (абсолютн.)", "pronoun", "This book is mine.", "Местоимения и связки"),
+    ("yours", "твой, ваш (абсолютн.)", "pronoun", "Is this pen yours?", "Местоимения и связки"),
+    ("hers", "её (абсолютн.)", "pronoun", "The choice is hers.", "Местоимения и связки"),
+    ("ours", "наш (абсолютн.)", "pronoun", "The victory is ours.", "Местоимения и связки"),
+    ("theirs", "их (абсолютн.)", "pronoun", "The responsibility is theirs.", "Местоимения и связки"),
+    
+    ("this", "этот, эта, это", "pronoun", "This is a great idea.", "Местоимения и связки"),
+    ("that", "тот, та, то, что", "pronoun", "That was a mistake.", "Местоимения и связки"),
+    ("these", "эти", "pronoun", "These are my shoes.", "Местоимения и связки"),
+    ("those", "те", "pronoun", "Those apples look fresh.", "Местоимения и связки"),
+    
+    ("there", "там, туда", "adverb", "Put the box there.", "Местоимения и связки"),
+    ("here", "здесь, сюда", "adverb", "Come here, please.", "Местоимения и связки"),
+    
+    ("what", "что, какой", "pronoun", "What do you want?", "Местоимения и связки"),
+    ("who", "кто", "pronoun", "Who is knocking?", "Местоимения и связки"),
+    ("which", "который", "pronoun", "Which one do you prefer?", "Местоимения и связки"),
+    ("where", "где, куда", "adverb", "Where are you going?", "Местоимения и связки"),
+    ("when", "когда", "adverb", "When will you arrive?", "Местоимения и связки"),
+    ("why", "почему, зачем", "adverb", "Why are you crying?", "Местоимения и связки"),
+    ("how", "как", "adverb", "How did you do that?", "Местоимения и связки"),
+    
+    ("someone", "кто-то", "pronoun", "Someone is at the door.", "Местоимения и связки"),
+    ("somebody", "кто-нибудь", "pronoun", "Somebody help me!", "Местоимения и связки"),
+    ("something", "что-то", "pronoun", "I need something to drink.", "Местоимения и связки"),
+    ("somewhere", "где-то", "adverb", "They live somewhere in London.", "Местоимения и связки"),
+    
+    ("anyone", "кто-угодно", "pronoun", "Can anyone answer this?", "Местоимения и связки"),
+    ("anybody", "кто-нибудь (в вопросе)", "pronoun", "Is anybody home?", "Местоимения и связки"),
+    ("anything", "что-угодно", "pronoun", "You can choose anything.", "Местоимения и связки"),
+    ("anywhere", "где-угодно", "adverb", "I will follow you anywhere.", "Местоимения и связки"),
+    
+    ("everyone", "каждый, все", "pronoun", "Everyone likes her.", "Местоимения и связки"),
+    ("everybody", "все", "pronoun", "Everybody is waiting.", "Местоимения и связки"),
+    ("everything", "всё", "pronoun", "Everything will be fine.", "Местоимения и связки"),
+    ("everywhere", "везде", "adverb", "I looked everywhere for my keys.", "Местоимения и связки"),
+    
+    ("no one", "никто", "pronoun", "No one knows the answer.", "Местоимения и связки"),
+    ("nobody", "никто", "pronoun", "Nobody came to the party.", "Местоимения и связки"),
+    ("nothing", "ничто, ничего", "pronoun", "I have nothing to say.", "Местоимения и связки"),
+    ("nowhere", "нигде, никуда", "adverb", "There is nowhere to hide.", "Местоимения и связки")
 ]
 
 
