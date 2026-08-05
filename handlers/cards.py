@@ -14,8 +14,9 @@ async def send_next_card(call: CallbackQuery, current_word_id: int = None):
     stats = await get_user_stats(user_id)
 
     if not word:
+        total = stats['total_words']
         await call.message.edit_text(
-            "🎉 <b>Поздравляем!</b>\nВы выучили все 1025 слов в нашем тренажере!",
+            f"🎉 <b>Поздравляем!</b>\nВы выучили все {total} слов в нашем тренажере!",
             parse_mode="HTML",
             reply_markup=get_back_to_menu_keyboard()
         )

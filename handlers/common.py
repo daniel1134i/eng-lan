@@ -191,9 +191,11 @@ async def cmd_start(message: Message):
             await message.answer(duel_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
             return
 
+    stats = await get_user_stats(user_id)
+    total_words = stats['total_words']
     welcome_text = (
         f"👋 <b>Привет, {first_name}!</b>\n\n"
-        f"Добро пожаловать в тренажер <b>1025 самых популярных английских слов</b>!\n\n"
+        f"Добро пожаловать в тренажер <b>{total_words} самых популярных английских слов</b>!\n\n"
         f"🎯 <b>Целевой темп:</b> 50 слов в неделю (~7 слов в день).\n"
         f"🔥 <b>Страйк:</b> Бот фиксирует твои ежедневные занятия.\n"
         f"🧠 <b>Алгоритм SM-2:</b> Интервальное повторение слов.\n\n"

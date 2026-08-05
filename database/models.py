@@ -21,8 +21,8 @@ async def get_or_create_user(telegram_id: int):
             # Назначаем пользователю все существуюшие слова в статус 'new'
             await db.execute("""
                 INSERT OR IGNORE INTO user_words (user_id, word_id, status)
-                SELECT ?, word_id, 'new' FROM words
-            """, (telegram_id,))
+                SELECT ?, word_id, 'new' FROM words WHERE is_custom = 0 OR user_id = ?
+            """, (telegram_id, telegram_id))
             await db.commit()
             
             async with db.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)) as cursor:
@@ -107,7 +107,7 @@ async def get_user_stats(telegram_id: int):
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
         # Всего слов в системе
-        async with db.execute("SELECT COUNT(*) as cnt FROM words") as cursor:
+        async with db.execute("SELECT COUNT(*) as cnt FROM words WHERE is_custom = 0 OR user_id = ?", (telegram_id,)) as cursor:
             total_words_row = await cursor.fetchone()
             total_words = total_words_row['cnt'] if total_words_row else 1250
 
@@ -194,8 +194,8 @@ async def get_next_card_word(telegram_id: int, current_word_id: int = None):
         db.row_factory = aiosqlite.Row
         await db.execute("""
             INSERT OR IGNORE INTO user_words (user_id, word_id, status)
-            SELECT ?, word_id, 'new' FROM words
-        """, (telegram_id,))
+            SELECT ?, word_id, 'new' FROM words WHERE is_custom = 0 OR user_id = ?
+        """, (telegram_id, telegram_id))
         await db.commit()
 
         cat = await get_user_selected_category(telegram_id)
@@ -229,6 +229,11 @@ async def get_quiz_question(telegram_id: int):
     """
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
+        await db.execute("""
+            INSERT OR IGNORE INTO user_words (user_id, word_id, status)
+            SELECT ?, word_id, 'new' FROM words WHERE is_custom = 0 OR user_id = ?
+        """, (telegram_id, telegram_id))
+        await db.commit()
         cat = await get_user_selected_category(telegram_id)
 
         where_clause = "WHERE uw.user_id = ? AND uw.status != 'learned'"
