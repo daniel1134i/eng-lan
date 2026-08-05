@@ -130,12 +130,15 @@ async def run_update_task(status_msg: Message):
         f"<code>{git_output if git_output else 'Код в актуальном состоянии.'}</code>\n\n"
         f"🔤 <b>Статус Базы Данных (1250 фраз):</b>\n"
         f"<code>{seed_output if seed_output else 'База слов обновлена.'}</code>\n\n"
-        f"✨ <i>Все новые функции (100 фраз, 5-мин PvP дуэли) применены!</i>"
+        f"✨ <i>Все новые функции применены!</i>"
     )
     try:
-        await status_msg.edit_text(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        await status_msg.edit_text(res_text + "\n\n🔄 <i>Перезапуск процесса бота...</i>", parse_mode="HTML", reply_markup=get_main_menu_keyboard())
     except Exception:
-        await status_msg.answer(res_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        await status_msg.answer(res_text + "\n\n🔄 <i>Перезапуск процесса бота...</i>", parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+
+    # Автоматический перезапуск процесса
+    os.execv(sys.executable, ['python'] + sys.argv)
 
 
 

@@ -107,6 +107,24 @@ async def init_db():
         except Exception:
             pass
             
+        try:
+            await db.execute("""
+                UPDATE users 
+                SET words_added_this_pack = (
+                    SELECT COUNT(*) FROM user_words 
+                    WHERE user_words.user_id = users.telegram_id 
+                    AND status = 'learning'
+                )
+                WHERE pack_start_date IS NULL AND words_added_this_pack = 0
+            """)
+            await db.execute("""
+                UPDATE users 
+                SET pack_start_date = CURRENT_TIMESTAMP 
+                WHERE words_added_this_pack > 0 AND pack_start_date IS NULL
+            """)
+        except Exception:
+            pass
+
         # Таблица PvP дуэлей
         await db.execute("""
             CREATE TABLE IF NOT EXISTS duels (
